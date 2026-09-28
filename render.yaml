@@ -2,7 +2,7 @@
 # É um site estático: sem build, sem servidor, sem Node.
 services:
   - type: web
-    name: ficha-tranpasse
+    name: tranpasse-ilusorio
     runtime: static
     staticPublishPath: ./public
     headers:
