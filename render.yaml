@@ -1,0 +1,11 @@
+# Render lê este arquivo e cria o serviço sozinho — não precisa configurar nada na tela.
+# É um site estático: sem build, sem servidor, sem Node.
+services:
+  - type: web
+    name: ficha-tranpasse
+    runtime: static
+    staticPublishPath: ./public
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
