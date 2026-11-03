@@ -96,10 +96,6 @@ a{color:var(--gold)}
 @keyframes swayHeavy{0%,100%{transform:translateY(0)}50%{transform:translateY(3px)}}
 .avatar-wrap.state-normal{border-color:var(--uni);animation:pulseUni 3s ease-in-out infinite}
 .avatar-wrap.state-combat{border-color:var(--hp);animation:pulseCombat .8s ease-in-out infinite}
-.avatar-wrap.state-sleeping{border-color:#1f3a6b;box-shadow:0 0 12px rgba(31,58,107,0.4)}
-.avatar-wrap.state-sleeping .avatar-img{filter:brightness(.45) saturate(.4) hue-rotate(200deg)}
-.avatar-wrap.state-stealth{border-color:#2d4a30;box-shadow:0 0 8px rgba(45,74,48,0.3)}
-.avatar-wrap.state-stealth .avatar-img{opacity:.45;filter:blur(1px)}
 .avatar-wrap.state-dying{border-color:var(--hp);animation:pulseDying 1.2s ease-in-out infinite}
 .avatar-wrap.state-dying .avatar-img{filter:grayscale(.85) brightness(.4)}
 .avatar-wrap.state-dead{border-color:#3a3a3a;box-shadow:none;animation:none}
@@ -143,6 +139,9 @@ a{color:var(--gold)}
 .id-group:first-child{border-top:none;margin-top:6px}
 .id-group-title{font-family:'Cinzel Decorative',serif;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
 .id-group .identity-list{margin-top:0}
+.xp-saldo{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px;padding:6px 8px;border-radius:6px;background:var(--surface-3);border:1px solid var(--border);font-size:11px}
+.xp-saldo.tem{border-color:var(--gold);box-shadow:0 0 6px rgba(201,162,93,0.25)}
+.xp-saldo label{display:flex;gap:4px;align-items:center;color:var(--text-dim)}
 .xp-add{display:flex;gap:6px;align-items:center;margin-top:8px}
 .xp-add input{flex:1;min-width:0;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-family:'JetBrains Mono',monospace;outline:none}
 .xp-add input:focus{border-color:var(--uni)}
@@ -274,11 +273,7 @@ select.id-input{cursor:pointer}
 .escola-nv{display:flex;align-items:center;gap:5px;margin-left:auto;padding:3px 8px;background:var(--surface-3);border-radius:4px;border:1px solid var(--border)}
 .escola-nv input{width:38px;background:transparent;border:none;text-align:center;font-family:'JetBrains Mono',monospace;color:var(--uni);font-weight:700}
 .escola-entrada{flex:1 0 100%;color:var(--text-mute);font-size:10px;font-style:italic}
-.branch-grid{display:grid;grid-template-columns:repeat(var(--tree-cols,6),minmax(104px,1fr));grid-auto-rows:auto;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;position:relative}
-.branch-grid .tree-links{position:absolute;left:0;top:0;pointer-events:none;z-index:0}
-.branch-grid .tree-links .link{fill:none;stroke:var(--text-mute);stroke-width:2;opacity:.35}
-.branch-grid .tree-links .link.on{stroke:var(--gold);opacity:.7}
-.branch-grid .branch{position:relative;z-index:1}
+.branch-grid{display:grid;grid-template-columns:repeat(var(--tree-cols,6),minmax(104px,1fr));grid-auto-rows:auto;gap:6px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px}
 @media (max-width:900px){ .branch-grid{grid-template-columns:repeat(auto-fill,minmax(112px,1fr))} .branch{grid-column:auto !important;grid-row:auto !important} .escola-nv{margin-left:0} }
 .branch{padding:6px 8px;border-radius:6px;background:var(--surface-3);border:1px solid var(--border);font-size:11px;text-align:center;position:relative}
 .branch.active{border-color:var(--uni);box-shadow:0 0 6px rgba(91,224,230,0.3)}
@@ -296,6 +291,13 @@ select.id-input{cursor:pointer}
 .card-meta{display:flex;gap:6px;font-size:10px;color:var(--text-mute);margin-bottom:6px;flex-wrap:wrap}
 .card-meta span{padding:2px 6px;background:var(--bg-2);border-radius:3px;border:1px solid var(--border)}
 .card-desc{font-size:11px;color:var(--text-dim);margin:6px 0;white-space:pre-wrap}
+/* ponytail: encolher descrição de talento/técnica/arma/equipamento/buff/mecânica. line-clamp
+   nativo em vez de max-height: descrição curta fica idêntica (nada a cortar), só a comprida
+   ganha as reticências. Sem estado salvo — recompute() não re-renderiza essas listas, então o
+   que você abriu continua aberto durante o jogo; só volta a encolher se editar aquela lista. */
+.card-desc,.mec-desc{cursor:pointer}
+.card-desc:not(.aberta),.mec-desc:not(.aberta){display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.card-desc.aberta,.mec-desc.aberta{display:block}
 .weapon-card{background:linear-gradient(135deg,rgba(201,162,93,0.08),var(--surface-3));border-color:var(--border-strong)}
 .weapon-card .heir{color:var(--gold);font-size:13px;margin-right:4px}
 .tag{padding:2px 6px;border-radius:3px;font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:600}
@@ -397,21 +399,37 @@ select.id-input{cursor:pointer}
 .btn-danger:hover{background:var(--hp);color:var(--bg);border-color:var(--hp)}
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px}
 .modal-bg.active{display:flex}
-.modal{background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:20px;max-width:620px;width:100%;max-height:90vh;overflow-y:auto}
+/* ponytail: body{zoom} multiplica o vh. Com uiZoom 1.1 um teto de 90vh virava 99% da tela real
+   e o padding de 20px do fundo (também ampliado) jogava o resto pra fora — era o popup "maior
+   que a tela". Dividir pelo zoom devolve o teto ao que ele promete. Vale para TODOS os modais:
+   o limite mora aqui, não em cada popup. */
+.modal{background:var(--surface);border:1px solid var(--border-strong);border-radius:12px;padding:20px;max-width:620px;width:100%;max-height:calc(88vh / var(--zoom,1));overflow-y:auto;display:flex;flex-direction:column}
+.modal>*{flex:0 0 auto}
+/* rodapé grudado: Salvar/Cancelar não somem no fim da rolagem de um formulário comprido */
+.modal-actions{position:sticky;bottom:-20px;background:var(--surface);padding:12px 0 2px;margin-top:auto;z-index:2}
 .modal h3{margin:0 0 14px;color:var(--gold);font-family:'Cinzel Decorative',serif}
-.fx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px}
-.fx-pick{padding:10px;border-radius:6px;background:var(--surface-3);border:1px solid var(--border);cursor:pointer;text-align:center;font-size:12px}
+.fx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:6px}
+.fx-pick{padding:7px 5px;border-radius:6px;background:var(--surface-3);border:1px solid var(--border);cursor:pointer;text-align:center;font-size:12px}
 .fx-pick:hover{border-color:var(--uni);color:var(--uni)}
-.fx-pick .fxn{font-size:11px;margin-top:4px}
+.fx-pick.sel{border-color:var(--uni);background:rgba(91,224,230,0.1);box-shadow:0 0 6px var(--uni-glow)}
+.fx-pick .fxn{font-size:10px;margin-top:3px;line-height:1.25}
 .fx-pick .fxd{font-size:9px;color:var(--text-mute);margin-top:3px}
+/* painel de descrição do efeito selecionado — some enquanto nada está escolhido */
+.fx-desc{display:none;margin-top:10px;padding:10px;border-radius:6px;background:var(--surface-2);border:1px solid var(--border);gap:10px;align-items:center;justify-content:space-between}
+.fx-desc.on{display:flex}
+.fx-desc .fxd-full{font-size:11px;color:var(--text-dim);margin-top:4px;line-height:1.4}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .form-field{display:flex;flex-direction:column;gap:4px}
 .form-field.full{grid-column:1/-1}
-.form-field label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-mute)}
+.form-field label{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-mute);display:flex;align-items:center;gap:6px}
+.bloco-x{margin-left:auto;opacity:.5}
+.bloco-x:hover{opacity:1}
+.add-bloco select{background:var(--surface-3);border:1px dashed var(--border-strong);border-radius:6px;padding:7px 8px;color:var(--text-dim);width:100%}
+.dice-pct{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-dim);margin-top:6px}
 .form-field input,.form-field textarea,.form-field select{background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:7px 8px;color:var(--text);font-size:13px;outline:none}
 .form-field input:focus,.form-field textarea:focus,.form-field select:focus{border-color:var(--uni)}
 .form-field textarea{min-height:80px;resize:vertical;font-family:inherit}
-.modal-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+.modal-actions{display:flex;justify-content:flex-end;gap:8px}
 .theme-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:10px;margin-bottom:14px}
 .theme-pick{border:1px solid var(--border);border-radius:8px;padding:10px;cursor:pointer;text-align:center}
 .theme-pick:hover{border-color:var(--border-strong)}
@@ -750,6 +768,7 @@ body.leitura #btnFichas,body.leitura #btnEntrar{pointer-events:auto;opacity:1}
   <div class="modal">
     <h3>Aplicar Efeito do Sistema</h3>
     <div class="fx-grid" id="fxGrid"></div>
+    <div class="fx-desc" id="fxDesc"></div>
     <div class="modal-actions"><button class="btn-ghost" onclick="closeModal('effectModal')">Fechar</button></div>
   </div>
 </div>
@@ -881,12 +900,17 @@ body.leitura #btnFichas,body.leitura #btnEntrar{pointer-events:auto;opacity:1}
 /* =========================================================================
    DADOS-PADRÃO (template) — conteúdo é exemplo, edite à vontade.
    ========================================================================= */
+/* Anotacoes iniciais da aba Bestiario: as 3 criaturas das fotos de
+   Bestiario/ cruzadas com as sessoes de "A Historia ate entao". */
+const BESTIARIO_INICIAL = "BESTIÁRIO DE ELEDIN — criaturas já encontradas em campanha\n\n═══════════════════════════════════════════\nDRÓLTSY · Monstro · Nível recomendado 07\nBaixa proliferação · Alta letalidade · Alta voracidade\n───────────────────────────────────────────\nPredador cavernício e noturno. Vive ~8 anos, adulto aos ~2. Ninhada = macho +\nfêmea + ~10 filhotes, em cavernas com mais de 50 m de profundidade.\n\nCEGO. Olfato, tato e audição extremamente refinados — localiza presa com\nprecisão mesmo sem enxergar. Odor forte e característico.\n\nATAQUES\n· Língua de até 4 m, reativa: captura quem foge e arrasta direto para a mordida.\n· Usa árvores, paredes e encostas como impulso para se lançar — esmaga ou\n  atordoa prensando o alvo contra superfície rígida. Os membros são essenciais\n  para essa propulsão.\n· Contra grupo, fixa-se em UM adversário por vez. A cauda repele aproximação\n  lateral.\n\nDEFESAS E FRAQUEZAS\n· Pele muito resistente a corte e perfuração; pouco sensível à dor.\n· FRACO a: exposição ao sol, e a impacto contundente (compromete a blindagem).\n· Bolsa-placa abdominal onde o macho guarda presas: quem chega perto dela vira\n  ameaça máxima.\n\nVARIAÇÕES\n· Linhagens de mobilidade: articulações mais expostas nos tarsos.\n· Linhagens de mordida: estrutura bucal ampliada, mandíbula parcialmente exposta.\n· Fêmea: mais armazenamento, retarda apodrecimento da carne, percepção aguçada.\n· Casal idoso caça junto até o fim — macho na ofensiva, fêmea detectando.\n\nVISTO EM: S03 (cheiro do ferido, via Gary) · S04 (na caverna, se aproximando) ·\nS05 (intercepta o grupo; Drakion quase tem ataque fulminante, Gary o salva;\na fuga joga todos na caverna de Calcarianhas).\n\n═══════════════════════════════════════════\nURNECINÁÍ · Monstro · Nível recomendado 04\nMédia proliferação · Média letalidade · Baixa voracidade\n(o recap grafa \"Urnicenais\"; acima está a grafia do bestiário)\n───────────────────────────────────────────\nHumanoide ursídeo, pelagem escura, chifres curtos, garras longas. Vive ~20 anos,\nmaduro aos ~3. Bando de ~6; ~5 filhotes por casal. Acima de duas dezenas, o\nbando se divide para colonizar território novo. Habita região superficial de\ncavernas isoladas. Após uma noite de alimentação intensa, entra em torpor\nmetabólico de quase uma semana.\n\nCAÇA PELO MEDO — este é o perigo real, não a força\n· Atormentam psicologicamente à distância e escolhem o alvo MAIS ASSUSTADO.\n· Fixam o olhar até o terror paralisar a vítima.\n· Se a presa não demonstra medo suficiente, ABANDONAM e procuram outro alvo.\n· Em desvantagem, voltam ao terror como tática: o bando concentra no inimigo\n  mais fraco para criar distração e abrir fuga ou contra-ataque.\n· Sensíveis a gritos e a sangue. Audição e olfato refinados.\n\nATAQUES\n· Lentos e devastadores: membros + mandíbulas desmembram criatura gigantesca ou\n  atordoam fera resistente. Raramente erram.\n· Gordura no auge = pesados, brutais, desequilibrados. Proteção reduzida = mais\n  ágeis, priorizam contenção em vez de ofensiva bruta.\n· Fêmea: mordida mais potente, ataca sobre os quatro membros protegendo o busto.\n  Macho: mais força explosiva, mais impulsivo e descontrolado.\n\nDEFESAS E FRAQUEZAS\n· Camada espessa de gordura blindada contra corte, perfuração, impacto e dor.\n  Consome-se rápido nas primeiras investidas — por isso preferem confronto curto\n  e decisivo. ESTICAR A LUTA É O CONTRA-JOGO.\n· FRACO: o busto da fêmea após o parto é o ponto mais vulnerável.\n· CORAÇÃO-NÚCLEO: concentra energia vital. Quando um indivíduo está à beira da\n  morte a energia se acumula nele, e os companheiros podem devorá-lo para\n  restaurar parte da própria gordura protetora. Danificar o coração antes do\n  consumo anula essa transferência.\n\nSINAL TERRITORIAL: degradam árvores e vegetação perto do ninho, para atrair\nnovos integrantes e favorecer cruzamento entre linhagens distintas.\n\n\"Meu erro foi ter olhado fundo nos olhos daquela besta, como um coelho, caí em\nsua armadilha, não tive forças nem para segurar minhas armas. Se minha equipe\nnão estivesse lá, firme, eu não estaria mais aqui, vivo.\"\n— Militar de primeira expedição\n\nVISTO EM: S01 (a missão original era destruir um ninho desses perto da Baía de\nFlumenél) · S03 (emboscada: cinco atacantes, dois fugiram no início; combate\nacirrado).\n\n═══════════════════════════════════════════\nCALCARIANHA · Monstro · Nível recomendado 02\nProliferação variável · Baixa letalidade · Alta voracidade\n───────────────────────────────────────────\nAracnídeo cavernício da linhagem calcária. Ninho imenso de teia em caverna\ncalcária isolada. Colônia de poucos indivíduos a centenas. Indivíduo comum vive\n~8 meses; a rainha chega a 20 anos. Come praticamente tudo que se move.\n\nCINCO OLHOS VERDADEIROS sensíveis ao CALOR, entre os pontos vermelhos do corpo.\nSempre ao menos um olho frontal e um traseiro funcionais. Todas são SURDAS,\nexceto a rainha.\n\nATAQUES — sequência fixa, dá para antecipar\n1. Ferrão caudal disparado com precisão. Veneno: náusea, fadiga intensa,\n   descoordenação neuromotora. O ferrão leva horas para regenerar.\n2. Perseguição lenta por paredes e tetos, disparando teia.\n3. Segundo ferrão, abdominal: veneno de torpor profundo.\n4. Casulo e transporte ao ninho principal — a presa pode ficar VIVA por semanas\n   como reserva alimentar.\n· Patas rígidas e perfurantes como lanças.\n· O ranger fino das mandíbulas convoca reforço: quanto mais a presa resiste,\n  maior a chance de virem outras.\n\nDEFESAS E FRAQUEZAS\n· Carapaça dorsal muito resistente a corte, dor e impacto; CEDE A PERFURAÇÃO\n  DIRECIONADA, principalmente num ponto mais claro que coincide com o órgão\n  dorsal regenerativo (converte matéria orgânica ingerida em regeneração; as\n  patas regeneram quase instantaneamente).\n· ARMADILHA: a região ventral (mandíbulas, tórax, abdome caudal) é reservatório\n  de veneno. Em situação crítica EXPÕEM essa área de propósito para induzir o\n  inimigo a atacá-la e entrar em contato com as toxinas. Não ataque o ventre.\n· Olhos verdadeiros são frágeis e regeneram devagar — só eles piscam.\n· FRAQUEZA PRINCIPAL: a teia é altamente inflamável. Fogo resolve.\n\nRAINHA: morta a soberana, as demais entram em colapso biológico e\ncomportamental e expelem secreções venenosas que originam a nova rainha (nem\ntodas sobrevivem; leva até dois dias). A nova rainha cria vínculo orgânico com\na colônia por toxinas.\n\n\"Se eu não soubesse de sua visão de calor, jamais sairia com vida daquelas\ndezenas de perpetuadoras da dissonância, a iluminação de Fernensei me atingiu!\"\n— Explorador pródigo\n\nVISTO EM: S03 (Gary busca antídoto de aranha de caverna) · S05 (o grupo cai no\nninho fugindo do Dróltsy; vítimas antigas na teia eram elfos transformados em\naberrações; a luta em si não é das mais complicadas).\n\n═══════════════════════════════════════════\nENCONTRADOS EM CAMPANHA, SEM PÁGINA DE BESTIÁRIO\n───────────────────────────────────────────\n· NAD'ANTH — S02. Quatro interceptam o grupo na floresta. Valerius: vivem em\n  bando de 3 a 15, agem em conjunto, moram no oceano e nunca saem dele à noite\n  (hábito diurno).\n· MANBÓIDERS — S06 em diante. Vistos em tubos de suspensão no laboratório;\n  saem e comem ração de monstro. Interceptam o grupo ao sul na S08; um desiste\n  e reza de joelhos antes de o Supervisor levá-lo.\n· ABERRAÇÕES — elfos transformados por exposição a monstros, produto do vírus\n  dissonante. S05, S06, S07. Categoria, não espécie.\n· SEMI-CHEFE — a aberração imensa em suspensão, libertada e derrotada na S06.\n\nARTE SEM LEGENDA (Bestiario/*.jpg): há duas ilustrações sem texto na pasta —\num cão de duas cabeças acorrentado, com tentáculos, e um humanoide pálido e\nesquelético de bocarra dentada e garras longas. Não dá para dizer a qual\ncriatura pertencem sem a página; ficam aqui como referência visual, não como\nidentificação.";
 const DEFAULT_STATE = {
   /* Ficha vazia. Atributos, perícias e ramos são a estrutura fixa do sistema —
      tudo o mais nasce em branco e é preenchido pelo jogador. */
   basicos:{ jogador:"", nome:"", idade:"", raca:"Elfo", altura:"", massa:"", familiares:"", apreco:"",
             classePrimaria:"", nivelPrimaria:1, classeSecundaria:"", nivelSecundaria:0,
-            nivel:1, xpAtual:0, xpTotal:0, classeAlvo:"primaria", escolaAlvo:"magia", aquisicoes:[], extras:[] },
+            nivel:1, xpAtual:0, xpTotal:0, classeAlvo:"primaria", escolaAlvo:"magia", aquisicoes:[], extras:[],
+            // saldo a gastar, creditado por addXP ao subir de nível (ímpar atributo / par perícia)
+            ptsAtributo:0, ptsPericia:0 },
   status:{
     hp:{cur:9999,bonus:0,nota:""}, arm:{cur:9999,bonus:0,nota:""}, st:{cur:9999,bonus:0,nota:""},
     mp:{cur:9999,bonus:0,nota:""}, sn:{cur:9999,bonus:0,nota:""}, lk:{cur:9999,bonus:100,nota:""},
@@ -964,7 +988,7 @@ const DEFAULT_STATE = {
   reacoes:{ max:1 },
   mecAtivas:{}, mecStacks:{}, usos:{},
   cr:{ ativa:false, valor:0, desastreExtra:0 },
-  notas:{ historia:"", player:"", master:"", best:"", pec:"", treino:"" },
+  notas:{ historia:"", player:"", master:"", best:BESTIARIO_INICIAL, pec:"", treino:"" },
   avatarUrl:"",
   avatars:[{url:"",label:"Padrão"}],
   avatarIdx:0,
@@ -990,9 +1014,13 @@ const XP_TABLE = [ null,
   {req:150, gain:'01 ponto em Dado de Aprimoramento'},
   {req:150, gain:'Melhoria de Talento de Classe'}      /* Nv 15 = teto da tabela */
 ];
-/* "recebe um ponto de Atributo ou três de Perícias alternadamente" — quem escolhe qual
-   dos dois é o Mestre, na hora da evolução, então a ficha só registra a pendência. */
-function ganhoAlternado(nv){ return '01 ponto de Atributo ou 03 de Perícia (o Mestre define)'; }
+/* "recebe um ponto de Atributo ou três de Perícias alternadamente". A alternância é pelo
+   NÍVEL DE PERSONAGEM e não é escolha do Mestre: ímpar dá atributo, par dá perícia.
+   (Isso revoga a resposta antiga registrada em DUVIDAS-MESTRE.md 1.3, "o mestre vai decidir
+   ao evoluir" — decisão do jogador em 2026-11-03.) Nível 1 vem na criação, então o primeiro
+   ganho é o Nv 2 = 3 perícias. */
+const GANHO_ATRIBUTO=1, GANHO_PERICIA=3;
+function ganhoAlternado(nv){ return (nv%2) ? `0${GANHO_ATRIBUTO} ponto de Atributo` : `0${GANHO_PERICIA} pontos de Perícia`; }
 function xpReq(nivel){ const r=XP_TABLE[nivel+1]; return r?r.req:0; }   /* 0 = nível máximo */
 const XP_NIVEL_MAX = XP_TABLE.length-1;                                /* 15 — teto do nível e da soma das classes */
 
@@ -1273,7 +1301,7 @@ const EFFECTS_DB = [
   {id:'sono',name:'Sono',icon:'💤',color:'#3f6da8',desc:'-1 em todas as ações por acúmulo (máx 16); desmaia no máximo. Acumulativo.',accumulate:true},
   {id:'insanidade',name:'Insanidade',icon:'🌑',color:'#8a4fb0',desc:'Sanidade zerada; comportamentos insanos, controle do Mestre.'},
   {id:'desorientado',name:'Desorientado',icon:'🧭',color:'#7aa6e0',desc:'Senso de direção comprometido; segue o local errado.'},
-  {id:'deterioracao',name:'Deterioração',icon:'🥀',color:'#a77',desc:'-1 vida máxima por grau (temporário, não restaura vitalidade). Acumulativo.',accumulate:true},
+  {id:'deterioracao',name:'Deterioração',icon:'🥀',color:'#a77',desc:'-1 vida máxima por grau (temporário, não restaura vitalidade). Acumulativo.',accumulate:true,modsPorAcc:[{target:'max',sub:'hp',value:-1}]},
   {id:'sobrecarga',name:'Sobrecarga',icon:'🪨',color:'#e08a3f',desc:'Sobrepeso: a cada 3 kg, -1 dado físico e -1 mobilidade; >9 kg → exaustão.'},
   {id:'exaustao',name:'Exaustão',icon:'😩',color:'#888',desc:'Estâmina zerada: -6 dados físicos, -3 mentais; pode desmaiar.'},
   {id:'cegueira',name:'Cegueira',icon:'🌚',color:'#555',desc:'-5 m de pontaria e desvantagem visual (dobrada à distância) por acúmulo. Acumulativo.',accumulate:true},
@@ -1286,8 +1314,6 @@ const HEAL_IDS = {regeneracao:'hp'};
 const STATE_DEFS = {
   normal:{name:'Normal',color:'var(--uni)',bg:'rgba(91,224,230,0.08)',glow:'var(--uni-glow)'},
   combat:{name:'Em Combate',color:'var(--hp)',bg:'rgba(226,64,63,0.12)',glow:'rgba(226,64,63,0.6)'},
-  stealth:{name:'Furtivo',color:'#3a6a3d',bg:'rgba(58,106,61,0.1)',glow:'rgba(58,106,61,0.3)'},
-  sleeping:{name:'Dormindo',color:'#3f6da8',bg:'rgba(63,109,168,0.1)',glow:'rgba(63,109,168,0.4)'},
   dying:{name:'Morrendo',color:'var(--hp)',bg:'rgba(226,64,63,0.18)',glow:'rgba(226,64,63,0.8)'},
   dead:{name:'Morto',color:'#555',bg:'#1a1a1a',glow:'none'},
   insane:{name:'Insano',color:'var(--sn)',bg:'rgba(160,111,224,0.12)',glow:'rgba(160,111,224,0.6)'},
@@ -1298,8 +1324,10 @@ const STATE_DEFS = {
   burning:{name:'Em Chamas',color:'#ff6a1a',bg:'rgba(255,106,26,0.15)',glow:'rgba(255,106,26,0.7)'},
   unison:{name:'UNÍSSONO',color:'var(--sn)',bg:'linear-gradient(135deg,rgba(160,111,224,0.2),rgba(201,162,93,0.15))',glow:'rgba(201,162,93,0.7)'}
 };
-/* botões de estado manual */
-const MANUAL_STATES = [['combat','⚔ Combate'],['stealth','👁 Furtivo'],['sleeping','☾ Dormindo'],['normal','◈ Normal']];
+/* botões de estado manual. ponytail: Furtivo e Dormindo saíram — eram só pintura no avatar,
+   nenhum cálculo os lia (a furtividade do Espreitador vem de state.mecAtivas, por interruptor
+   próprio). Sobra o único estado que move regra: estar ou não em combate. */
+const MANUAL_STATES = [['combat','⚔ Em combate'],['normal','◈ Fora de combate']];
 
 /* ----- Temas ----- */
 const THEMES = {
@@ -1491,7 +1519,10 @@ function restaurarSessao(s){
   runtime.effects   = Array.isArray(s.effects)? s.effects : [];
   runtime.round     = Math.max(1, num(s.round)||1);
   runtime.inCombat  = !!s.inCombat;
-  runtime.manualState = s.manualState||'normal';
+  // ponytail: migração de sessão (não é migrar(), que só trata a ficha). Sessões salvas com
+  // 'stealth'/'sleeping' viravam um estado sem STATE_DEFS, sem botão e sem CSS. Tudo que não
+  // for combate cai em 'normal'.
+  runtime.manualState = (s.manualState==='combat') ? 'combat' : 'normal';
   runtime.reacoesUsadas = Math.max(0, num(s.reacoesUsadas));
   runtime.log       = Array.isArray(s.log)? s.log : [];
 }
@@ -1501,6 +1532,25 @@ function restaurarSessao(s){
    Altera `salvo` no lugar e devolve ele mesmo. */
 function migrar(salvo){
   if(!salvo || typeof salvo!=='object') return salvo;
+  // Semeia a aba Bestiario uma unica vez, e so se o jogador ainda nao escreveu nada ali.
+  // A flag impede que apagar a aba de proposito seja desfeito no proximo load.
+  if(!salvo.notasSeed){
+    salvo.notasSeed=true;
+    if(!salvo.notas) salvo.notas={};
+    if(!String(salvo.notas.best||'').trim()) salvo.notas.best=BESTIARIO_INICIAL;
+  }
+  // "Dano extra por ataque consecutivo" era campo fixo da arma; virou lista de efeitos
+  // especiais com nome livre. Converte o par antigo no primeiro item da lista, preservando
+  // inclusive o acúmulo em curso, e só então apaga os campos velhos.
+  if(Array.isArray(salvo.weapons)) salvo.weapons.forEach(w=>{
+    if(!w || Array.isArray(w.especiais)) return;
+    w.especiais=[];
+    if(num(w.consecutivoMax)>0 || String(w.consecutivoFormula||'').trim()!==''){
+      w.especiais.push({nome:'Ataque consecutivo no mesmo alvo',
+                        formula:w.consecutivoFormula||'', max:num(w.consecutivoMax), acc:num(w.acc)});
+    }
+    delete w.consecutivoFormula; delete w.consecutivoMax; delete w.acc;
+  });
   // O talento do Lutador virou mecânica de classe (CLASS_MEC). Remove a cópia que vinha
   // no template, senão o D4 conta duas vezes. Só o nome exato do template é removido.
   if(Array.isArray(salvo.talents)) salvo.talents=salvo.talents.filter(t=>!(t&&/^Passiva\s*[—-]\s*Lutador$/.test(t.nome||'')));
@@ -1875,6 +1925,13 @@ function clamp(v,a,b){return Math.max(a,Math.min(b,v))}
 function pct(c,m){return m>0?Math.round((c/m)*100):0}
 function d(sides){return 1+Math.floor(Math.random()*sides)}
 function num(v){return parseFloat(v)||0}
+function arred(v){return Math.round(num(v)*100)/100}          // corta ruído de ponto flutuante na exibição
+/* Efeitos especiais de arma: um acumulador por efeito, com fórmula e teto próprios.
+   Efeito sem fórmula ou sem teto é puramente textual e não entra em conta nenhuma. */
+function especialAtivo(e){ return e && num(e.max)>0 && String(e.formula||'').trim()!==''; }
+function bonusEspecial(e){ return especialAtivo(e) ? Math.floor(evalFormula(e.formula,0))*clamp(num(e.acc),0,num(e.max)) : 0; }
+function bonusEspeciais(w){ return (w&&w.especiais||[]).reduce((s,e)=>s+bonusEspecial(e),0); }
+function pctDado(dc){return (dc&&dc.bonusPct!=null)?num(dc.bonusPct):100}   // 100 = o antigo "dobrar"
 function sanAtual(){return state.status.sn.cur}
 function grupoMod(nome){ const g=state.atributos.find(x=>x.nome===nome); return g?g.mod:0; }
 
@@ -1903,7 +1960,10 @@ function activeModifiers(){
   for(const c of state.condicoes){ if(c.ativa) push(c.nome, c.mods); }
   for(const b of state.buffs){ if(b.active!==false) push(b.nome||'Buff', b.mods); }
   for(const arr of [state.weapons,state.equip,state.inventory]) for(const it of arr){ if(it.active) push(it.nome||'Item', it.mods); }
-  for(const e of runtime.effects){ if(e.active!==false) push(e.name, e.mods); }
+  // ponytail: modsPorAcc sai do EFFECTS_DB pelo id, não do efeito salvo na sessão. Assim um
+  // efeito já aplicado antes desta mudança passa a valer sem migração de sessão.
+  for(const e of runtime.effects){ if(e.active!==false){ push(e.name, e.mods);
+    const mp=(EFFECTS_DB.find(x=>x.id===e.id)||{}).modsPorAcc; if(mp) push(e.name, mp, Math.max(0,num(e.acc))); } }
   // 2ª passada: talentos/mecânicas com gatilho de vida. O limiar sai dos modificadores já
   // coletados acima — assim não se consulta statusMax() (que chamaria isto de volta).
   const maxHp=Math.max(0, autoScale(STATUS_SCALE.hp)+(state.status.hp.bonus||0)+out.filter(m=>m.key==='max:hp').reduce((a,m)=>a+m.value,0));
@@ -1925,9 +1985,13 @@ function activeDiceBonuses(cat){
   const consider=(src,dc)=>{
     if(!dc||!dc.die||!(dc.cats||[]).some(c=>cats.includes(c))) return;
     let count=dc.count||1;
-    // "o dano adicional é dobrado" = o valor rolado vale o dobro, não um dado a mais
+    // "o dano adicional é dobrado" = o valor rolado vale mais, não um dado a mais.
+    // ponytail: era mult=2 cravado. Agora o quanto vem de dc.bonusPct (100 = dobra, 25 = +25%).
+    // bonusPct ausente cai em 100, então talento salvo e mecânica de classe seguem dobrando
+    // exatamente como antes — nenhuma migração necessária.
+    const pct = (dc.bonusPct==null) ? 100 : num(dc.bonusPct);
     let mult=1;
-    if(dc.doubleWhen==='above-half'&&hpAbove())mult=2; else if(dc.doubleWhen==='below-half'&&!hpAbove())mult=2;
+    if(dc.doubleWhen==='above-half'&&hpAbove())mult=1+pct/100; else if(dc.doubleWhen==='below-half'&&!hpAbove())mult=1+pct/100;
     out.push({src, die:dc.die, count, mult, flat: dc.flatFormula?Math.floor(evalFormula(dc.flatFormula,0)):(dc.flat||0)});
   };
   const handle=(src,dice)=>{ if(Array.isArray(dice)) dice.forEach(x=>consider(src,x)); else consider(src,dice); };
@@ -1939,7 +2003,7 @@ function activeDiceBonuses(cat){
 /* cura extra por rodada vinda da classe (Regeneração do Lutador) */
 function regenExtra(){ return classMecs().reduce((a,m)=>a+((m.regenBonus&&talentActive(m))?m.regenBonus:0),0); }
 function diceBonusText(cat){
-  return activeDiceBonuses(cat).map(b=>`+${b.count>1?b.count:''}D${b.die}${b.mult>1?'×'+b.mult:''}${b.flat?(b.flat>0?'+':'')+b.flat:''} (${b.src})`).join(' ');
+  return activeDiceBonuses(cat).map(b=>`+${b.count>1?b.count:''}D${b.die}${b.mult>1?'×'+arred(b.mult):''}${b.flat?(b.flat>0?'+':'')+b.flat:''} (${b.src})`).join(' ');
 }
 const SKILL_CAT = {
   "Armas Físicas":"ataque","Armas Ágeis":"ataque","Brutalidade":"ataque","Artes Marciais":"ataque","Arremesso":"ataque","Armas à Distância":"ataque","Armas de Fogo":"ataque","Mira":"ataque",
@@ -2203,7 +2267,13 @@ function interpolarTags(texto){
     const k=chave.trim();
     if(k in v) return v[k];
     const achado=Object.keys(v).find(x=>x.toLowerCase()===k.toLowerCase());
-    return achado!==undefined ? v[achado] : m;
+    if(achado!==undefined) return v[achado];
+    // ponytail: não é tag pura → tenta como conta, ex. {0.3 x Medicina}. Quem avalia é
+    // evalFormula, que troca nomes por números e só então valida contra /^[-0-9+*/(). ]*$/ —
+    // nenhum texto do usuário chega ao Function(). Prosa entre chaves falha nesse teste,
+    // volta NaN e a chave fica intacta em vez de virar 0.
+    const n=evalFormula(k, NaN);
+    return Number.isFinite(n) ? String(Math.round(n*100)/100) : m;
   });
 }
 /* Fórmula que também aceita dados: "D4", "2D6 + 0.5 x Focalização". Devolve total e detalhe. */
@@ -2217,7 +2287,10 @@ function evalRolagem(expr, fallback){
   return { total: Math.floor(evalFormula(s, fallback||0)), detalhe: detalhe.join('+') };
 }
 function evalFormula(expr, fallback){
-  fallback=fallback||0;
+  // ponytail: era fallback||0, que engolia um NaN passado de propósito (NaN é falsy). Quem
+  // chama sem fallback continua recebendo 0; quem passa NaN consegue distinguir "não é conta"
+  // de "conta que deu zero" — é o que interpolarTags usa para não transformar prosa em 0.
+  fallback=(fallback===undefined)?0:fallback;
   if(expr==null||expr==='') return fallback;
   if(typeof expr==='number') return expr;
   let s=String(expr);
@@ -2256,7 +2329,9 @@ function roll(label, mod, override, category, vant){
   const txtDados = dados.length>1 ? `[${dados.join(',')}→${r}${vant>0?' vantagem':' desvantagem'}]` : `${r}`;
   const base=r+mod, ci=critInfo(mod, override);
   let bonusTotal=0, bparts=[];
-  if(category){ for(const b of activeDiceBonuses(category)){ for(let i=0;i<b.count;i++){ const v=d(b.die), m=b.mult||1; bonusTotal+=v*m; bparts.push('d'+b.die+'('+v+')'+(m>1?'×'+m:'')); } if(b.flat){ bonusTotal+=b.flat; bparts.push((b.flat>0?'+':'')+b.flat); } } }
+  // ponytail: m pode ser fracionário desde que o bônus virou percentual (1.25 em +25%), então
+  // arredonda pra baixo por dado — mesma convenção do flat, que já usa Math.floor.
+  if(category){ for(const b of activeDiceBonuses(category)){ for(let i=0;i<b.count;i++){ const v=d(b.die), m=b.mult||1; bonusTotal+=Math.floor(v*m); bparts.push('d'+b.die+'('+v+')'+(m>1?'×'+arred(m):'')); } if(b.flat){ bonusTotal+=b.flat; bparts.push((b.flat>0?'+':'')+b.flat); } } }
   const sum=base+bonusTotal;
   let kind='falha', text='Falha';
   if(r===20){kind='extremo';text='EXTREMO ✦ (20 natural)';}
@@ -2325,6 +2400,10 @@ function addXP(qtd){
   let req=xpReq(b.nivel), subiu=null;
   while(req>0 && b.xpAtual>=req){
     b.xpAtual-=req; b.nivel++;
+    // Alternância automática: ímpar = atributo, par = perícia. Não há crédito retroativo dos
+    // níveis já ganhos antes desta regra existir — ajuste o saldo na mão se precisar.
+    if(b.nivel%2) b.ptsAtributo=num(b.ptsAtributo)+GANHO_ATRIBUTO;
+    else          b.ptsPericia =num(b.ptsPericia )+GANHO_PERICIA;
     // O nível entra na classe escolhida e a AQUISIÇÃO vem do nível DAQUELA classe,
     // não do nível de personagem (subir a 2ª classe p/ Nv 2 dá o ganho do Nv 2, não o do nível final).
     const kl=(b.classeAlvo==='secundaria')?'nivelSecundaria':'nivelPrimaria';
@@ -2461,6 +2540,17 @@ function renderIdentity(){
   escSel.value=ESCOLAS[b.escolaAlvo]?b.escolaAlvo:'magia';
   escSel.onchange=()=>{ b.escolaAlvo=escSel.value; save(); renderIdentity(); };
   if(!maxed) g.appendChild(escRow);
+  // Saldo da alternância (ímpar atributo / par perícia). Editável: gastar é manual, e o campo
+  // serve tanto pra debitar ao distribuir quanto pra corrigir níveis anteriores à regra.
+  const saldo=el(`<div class="xp-saldo"><span class="muted">Pontos a gastar</span>
+    <label>Atributo <input class="id-input mono" type="number" min="0" data-pt="ptsAtributo" style="width:52px"></label>
+    <label>Perícia <input class="id-input mono" type="number" min="0" data-pt="ptsPericia" style="width:52px"></label></div>`);
+  saldo.querySelectorAll('[data-pt]').forEach(i=>{
+    i.value=num(b[i.dataset.pt]);
+    i.onchange=()=>{ b[i.dataset.pt]=Math.max(0,Math.floor(num(i.value))); i.value=b[i.dataset.pt]; save(); };
+  });
+  saldo.classList.toggle('tem', num(b.ptsAtributo)>0 || num(b.ptsPericia)>0);
+  g.appendChild(saldo);
   const nvAlvo=num(b.classeAlvo==='secundaria'?b.nivelSecundaria:b.nivelPrimaria)+1;
   const proxGanho=XP_TABLE[nvAlvo];
   g.appendChild(el(maxed
@@ -2695,11 +2785,10 @@ function renderRollSummary(){
      Os dados bônus de talento (o D4 do Lutador) entram no VALOR, não no teste de acerto. */
   const arma=(cat)=>{
     const w=armaEquipada(cat); const p=w?parseDano(w.dano):{dice:[],flat:0};
-    // ataques consecutivos no mesmo alvo: acúmulo × bônus, dentro do teto da arma
-    const acc=w?clamp(num(w.acc),0,num(w.consecutivoMax)||0):0;
-    const consec=acc?Math.floor(evalFormula(w.consecutivoFormula,0))*acc:0;
-    return {w, dice:p.dice, flat:p.flat+consec, consec, acc,
-            txt:w?`${w.nome} (${w.dano||'—'})${consec?` +${consec} consec.`:''}`:'sem arma equipada'};
+    // efeitos especiais da arma: cada um soma (bônus × acúmulo), dentro do seu próprio teto
+    const consec=w?bonusEspeciais(w):0;
+    return {w, dice:p.dice, flat:p.flat+consec, consec,
+            txt:w?`${w.nome} (${w.dano||'—'})${consec?` +${consec} especial`:''}`:'sem arma equipada'};
   };
   const linhaArma=(nome,cat,pericia,dadoBase,somaDanoFis)=>{
     const a=arma(cat), base=pericia.own + a.flat + (somaDanoFis?danoFis:0);
@@ -2912,37 +3001,14 @@ function renderBranches(){
     };
     g.appendChild(card);
   });
-  requestAnimationFrame(desenharLigacoesRamos);   // precisa do layout já calculado
 }
-/* Traços do diagrama do livro: liga cada ramo ao ramo-pai, em L, por trás dos cards. */
-function desenharLigacoesRamos(){
-  const g=document.getElementById('branchGrid'); if(!g) return;
-  let svg=g.querySelector('svg.tree-links');
-  if(!svg){ svg=document.createElementNS('http://www.w3.org/2000/svg','svg'); svg.setAttribute('class','tree-links'); g.insertBefore(svg,g.firstChild); }
-  svg.innerHTML='';
-  const box=g.getBoundingClientRect();
-  svg.setAttribute('width', g.scrollWidth); svg.setAttribute('height', g.scrollHeight);
-  svg.setAttribute('viewBox', `0 0 ${g.scrollWidth} ${g.scrollHeight}`);
-  const centro=elm=>{ const r=elm.getBoundingClientRect();
-    return {x:r.left-box.left+g.scrollLeft+r.width/2, y:r.top-box.top+r.height/2}; };
-  const escolaId=escolaAtual(), arvore=ESCOLAS[escolaId].tree;
-  state.ramos.forEach(b=>{
-    const t=arvore[b.n]; if(!t||!t.parent) return;
-    const filho=g.querySelector(`.branch[data-ramo="${CSS.escape(b.n)}"]`);
-    const pai=g.querySelector(`.branch[data-ramo="${CSS.escape(t.parent)}"]`);
-    if(!filho||!pai) return;
-    const a=centro(pai), c=centro(filho);
-    const reto=(Math.abs(a.x-c.x)<2 || Math.abs(a.y-c.y)<2);
-    const p=document.createElementNS('http://www.w3.org/2000/svg','path');
-    p.setAttribute('d', reto? `M${a.x},${a.y} L${c.x},${c.y}` : `M${a.x},${a.y} L${a.x},${c.y} L${c.x},${c.y}`);
-    p.setAttribute('class', ramoDesbloqueado(b.n, escolaId)?'link on':'link');
-    svg.appendChild(p);
-  });
-}
-addEventListener('resize', ()=>requestAnimationFrame(desenharLigacoesRamos));
-// ponytail: o rAF sozinho desenhava antes das fontes/abas assentarem → traços fora do lugar
-if(window.ResizeObserver) addEventListener('DOMContentLoaded', ()=>{ const g=document.getElementById('branchGrid'); if(g) new ResizeObserver(()=>requestAnimationFrame(desenharLigacoesRamos)).observe(g); });
-document.fonts&&document.fonts.ready.then(()=>requestAnimationFrame(desenharLigacoesRamos));
+/* ponytail: o diagrama do livro era desenhado em SVG por desenharLigacoesRamos(), removido.
+   Os traços ligavam pai→filho por getBoundingClientRect, mas o @media de 900px descarta as
+   posições da grade (grid-column/row:auto !important) e os cards refluem na ordem do DOM —
+   as linhas passavam a apontar para cards que saíram do lugar. Os DADOS da árvore estão certos
+   (48 dos 49 pares conferidos contra a grade do livro), então o pré-requisito e o cadeado
+   continuam valendo; o que sumiu foi só a pista visual. Quem quiser as linhas de volta precisa
+   antes resolver o refluxo no mobile, não os dados. */
 function renderTechs(){
   const c=document.getElementById('techList'); c.innerHTML='';
   const nivel=n=>{ const r=state.ramos.find(x=>x.n===n); return r?r.nv:0; };
@@ -2968,7 +3034,7 @@ function renderTechs(){
         const val=e.valorFormula?` ${Math.floor(evalFormula(e.valorFormula,0))}`:'';
         return `<span class="m" style="color:${meta?meta.color:'var(--uni)'}">${e.alvo==='alvo'?'⤳ ':'⟳ '}${esc(meta?meta.name:e.efeito)}${val}${e.valorFormula?'/rod':''}</span>`;
       }).join('')}</div>`:''}
-      <div class="card-desc">${esc(t.desc||'')}</div>
+      <div class="card-desc">${esc(interpolarTags(t.desc||''))}</div>
     </div>`);
     card.querySelector('.btn-mini:not(.del)').onclick=()=>openItemEditor('tecnicas',i);
     card.querySelector('.del').onclick=()=>{ if(confirm('Remover técnica "'+t.nome+'"?')){ state.tecnicas.splice(i,1); save(); renderTechs(); } };
@@ -3209,13 +3275,19 @@ function setState(newState, isManual){
   const badge=document.getElementById('stateBadge');
   badge.classList.add('flipping');
   setTimeout(()=>{ runtime.currentState=newState; applyStateVisual(newState); badge.classList.remove('flipping'); },250);
-  runtime.inCombat=(newState==='combat');
+  // ponytail: estar em combate é o que o JOGADOR declarou, não o estado que o badge mostra.
+  // Antes era (newState==='combat'), e checkAutoStates passa por aqui com dying/unison/insane/
+  // drowning/exhausted/desconcentrado/sobrecarregado — qualquer um deles zerava a rodada, os
+  // acúmulos, o w.acc e as reações NO MEIO DA LUTA. Em Uníssono (CR = Sanidade) isso disparava
+  // exatamente quando a técnica entrava.
+  runtime.inCombat=(runtime.manualState==='combat');
   if(wasCombat && !runtime.inCombat){
     runtime.round=1; const rn=document.getElementById('roundNum'); if(rn) rn.textContent='1';
     // acúmulos que só valem dentro do combate (ex.: barra de Contra-Ataque do Vanguardista)
     let zerou=false;
     classMecs().forEach(m=>{ if(m.expiraForaDeCombate && num(state.mecStacks[m.key])){ state.mecStacks[m.key]=0; zerou=true; } });
-    state.weapons.forEach(w=>{ if(num(w.acc)){ w.acc=0; zerou=true; } });     // ataques consecutivos também
+    // acumuladores dos efeitos especiais de arma também zeram ao sair do combate
+    state.weapons.forEach(w=>(w.especiais||[]).forEach(e=>{ if(num(e.acc)){ e.acc=0; zerou=true; } }));
     runtime.reacoesUsadas=0;
     reporUsos('combate');                                   // "1x por combate" volta ao sair da luta
     if(zerou){ save(); setTimeout(()=>{ recompute(); renderTalents(); renderWeapons(); },0); }
@@ -3230,8 +3302,7 @@ function applyStateVisual(s){
   document.getElementById('stateName').textContent=def.name;
   const av=document.getElementById('avatarWrap'); av.className='avatar-wrap state-'+s;
   const ov=document.getElementById('avatarOverlay'); ov.innerHTML=''; ov.style.display='block';
-  if(s==='sleeping'){ for(let i=0;i<3;i++) ov.appendChild(el(`<div class="zzz" style="left:${20+i*22}%;top:${50-i*10}%;font-size:${16+i*8}px;animation-delay:${i*.7}s">Z</div>`)); }
-  else if(s==='combat'){ const pos=[[5,5],[92,5],[5,92],[92,92]]; for(let i=0;i<4;i++) ov.appendChild(el(`<div class="spark" style="left:${pos[i][0]}%;top:${pos[i][1]}%;animation-delay:${i*.3}s"></div>`)); }
+  if(s==='combat'){ const pos=[[5,5],[92,5],[5,92],[92,92]]; for(let i=0;i<4;i++) ov.appendChild(el(`<div class="spark" style="left:${pos[i][0]}%;top:${pos[i][1]}%;animation-delay:${i*.3}s"></div>`)); }
   else if(s==='drowning'){ for(let i=0;i<8;i++) ov.appendChild(el(`<div class="bubble" style="left:${10+i*11}%;animation-delay:${i*.4}s;animation-duration:${2+Math.random()*2}s"></div>`)); }
   else if(s==='burning'){ for(let i=0;i<6;i++) ov.appendChild(el(`<div class="flame" style="left:${10+i*15}%;animation-delay:${i*.15}s"></div>`)); }
   else { ov.style.display='none'; }
@@ -3338,23 +3409,42 @@ function tickUm(fx){
   }
 }
 function tickEffects(){ for(const fx of [...runtime.effects]) tickUm(fx); }
+// ponytail: a lista mostrava a descrição inteira em cada um dos 30 cards, o que empurrava o
+// modal muito além da tela. Agora o card é só ícone + nome; a descrição aparece embaixo, uma
+// de cada vez, ao selecionar. A grade cabe inteira sem rolar.
 document.getElementById('addEffectBtn').onclick=()=>{
   const g=document.getElementById('fxGrid'); g.innerHTML=''; g.style.display='';
   document.querySelector('#effectModal h3').textContent='Aplicar Efeito do Sistema';
-  EFFECTS_DB.forEach(f=>{
+  const painel=document.getElementById('fxDesc');
+  painel.innerHTML=''; painel.classList.remove('on');
+
+  const aplicar=f=>{
     const dot=DOT_RULES[f.id];
-    const p=el(`<div class="fx-pick" style="border-color:${f.color}40"><div style="font-size:18px;color:${f.color}">${f.icon}</div><div class="fxn">${esc(f.name)}</div><div class="fxd">${esc(f.desc)}</div></div>`);
+    const rr=prompt(`Rodadas para ${f.name} (0 = até tratar):`,'3'); if(rr===null) return;
+    const rounds=parseInt(rr)||0;
+    const acc=f.accumulate?(parseInt(prompt('Acúmulo inicial:','1'))||1):0;
+    let value=0;
+    if(dot){ const dv=prompt(`Dano por rodada (${dot.label}):`,'2'); value=parseInt(dv)||0; }
+    else if(HEAL_IDS[f.id]){ const hv=prompt(`Cura por rodada:`,'2'); value=parseInt(hv)||0; }
+    // passa pelas regras de reaplicação do livro (maior sobrepõe / soma rodadas / acumula)
+    const fx=aplicarEfeitoSistema(f.id,{acc, value, rounds:rounds>0?rounds:999});
+    if(fx && HEAL_IDS[f.id] && fx.tick) fx.tick.value=value;
+    renderEffects(); recompute(); closeModal('effectModal');
+  };
+
+  EFFECTS_DB.forEach(f=>{
+    const p=el(`<div class="fx-pick" title="${esc(f.desc)}" style="border-color:${f.color}40"><div style="font-size:17px;color:${f.color}">${f.icon}</div><div class="fxn">${esc(f.name)}</div></div>`);
     p.onclick=()=>{
-      const rr=prompt(`Rodadas para ${f.name} (0 = até tratar):`,'3'); if(rr===null) return;
-      const rounds=parseInt(rr)||0;
-      const acc=f.accumulate?(parseInt(prompt('Acúmulo inicial:','1'))||1):0;
-      let value=0;
-      if(dot){ const dv=prompt(`Dano por rodada (${dot.label}):`,'2'); value=parseInt(dv)||0; }
-      else if(HEAL_IDS[f.id]){ const hv=prompt(`Cura por rodada:`,'2'); value=parseInt(hv)||0; }
-      // passa pelas regras de reaplicação do livro (maior sobrepõe / soma rodadas / acumula)
-      const fx=aplicarEfeitoSistema(f.id,{acc, value, rounds:rounds>0?rounds:999});
-      if(fx && HEAL_IDS[f.id] && fx.tick) fx.tick.value=value;
-      renderEffects(); recompute(); closeModal('effectModal');
+      const jaSel=p.classList.contains('sel');
+      g.querySelectorAll('.fx-pick.sel').forEach(x=>x.classList.remove('sel'));
+      if(jaSel){ painel.classList.remove('on'); painel.innerHTML=''; return; }   // 2º clique fecha
+      p.classList.add('sel');
+      painel.innerHTML='';
+      painel.appendChild(el(`<div><strong style="color:${f.color}">${f.icon} ${esc(f.name)}</strong><div class="fxd-full">${esc(f.desc)}</div></div>`));
+      const ok=el('<button class="btn-primary">Aplicar</button>');
+      ok.onclick=()=>aplicar(f);
+      painel.appendChild(ok);
+      painel.classList.add('on');
     };
     g.appendChild(p);
   });
@@ -3382,7 +3472,7 @@ function renderBuffs(){
           <label class="switch sm" title="Ativo"><input type="checkbox" ${b.active!==false?'checked':''}><span class="slider"></span></label>
           <span class="effect-rounds">${b.rodadas>0?b.rodadas+'r':'∞'}</span>
           <button class="btn-mini" title="Editar">✎</button><button class="btn-mini del" title="Remover">✕</button></div></div>
-      ${b.desc?`<div class="card-desc">${esc(b.desc)}</div>`:''}
+      ${b.desc?`<div class="card-desc">${esc(interpolarTags(b.desc))}</div>`:''}
       ${(b.mods&&b.mods.length)?`<div class="buff-mods">${b.mods.map(m=>`<span class="m">${esc(modLabel(m))}</span>`).join('')}</div>`:''}
     </div>`);
     card.querySelector('.switch input').onchange=e=>{ b.active=e.target.checked; save(); recompute(); renderBuffs(); };
@@ -3411,11 +3501,11 @@ function renderTalents(){
     const card=el(`<div class="card-item" style="border-color:var(--border-strong)">
       <div class="card-head"><div class="card-name">✦ ${esc(cls.n)} <span class="tag tag-amber" style="font-size:9px">Talento de Classe</span></div></div>
       <div class="card-meta"><span>${esc(cls.papel)}</span><span>Classe primária</span></div>
-      <div class="card-desc">${esc(cls.talento)}</div></div>`);
+      <div class="card-desc">${esc(interpolarTags(cls.talento))}</div></div>`);
     classMecs().forEach(m=>{
       const on=talentActive(m), num_=(m.mods||[]).length||m.dice||m.regenBonus;
       const modsTxt=(m.mods||[]).map(x=>modLabel(x)+(m.gate==='stacks'?'/ac.':'')).join(' · ');
-      const rotuloDado=dc=>`+${dc.count>1?dc.count:''}D${dc.die}${dc.flatFormula?'+('+dc.flatFormula+')':(dc.flat?'+'+dc.flat:'')} em ${(dc.cats||[]).join('/')}${dc.doubleWhen&&dc.doubleWhen!=='none'?` (×2 ${dc.doubleWhen==='above-half'?'acima':'abaixo'}½)`:''}`;
+      const rotuloDado=dc=>`+${dc.count>1?dc.count:''}D${dc.die}${dc.flatFormula?'+('+dc.flatFormula+')':(dc.flat?'+'+dc.flat:'')} em ${(dc.cats||[]).join('/')}${dc.doubleWhen&&dc.doubleWhen!=='none'?` (+${pctDado(dc)}% ${dc.doubleWhen==='above-half'?'acima':'abaixo'}½)`:''}`;
       const diceTxt=m.dice?(Array.isArray(m.dice)?m.dice:[m.dice]).map(rotuloDado).join(' · '):'';
       const row=el(`<div class="mec-row${on?'':' off'}">
         <div class="mec-head">
@@ -3424,7 +3514,7 @@ function renderTalents(){
           ${!num_?'<span class="muted" style="font-size:10px">narrativo</span>':''}
           ${m.gate==='below-half'?'<span class="tag tag-green" style="font-size:9px">abaixo ½ vida</span>':''}
         </div>
-        <div class="mec-desc">${esc(m.desc)}</div>
+        <div class="mec-desc">${esc(interpolarTags(m.desc))}</div>
       </div>`);
       const regenTxt=m.regenBonus?`+${m.regenBonus} por rodada de Regeneração`:'';
       if(modsTxt||diceTxt||regenTxt) row.appendChild(el(`<div class="buff-mods">${modsTxt?`<span class="m">${esc(modsTxt)}</span>`:''}${diceTxt?`<span class="m" style="color:var(--uni)">${esc(diceTxt)}</span>`:''}${regenTxt?`<span class="m" style="color:var(--ok)">${esc(regenTxt)}</span>`:''}</div>`));
@@ -3460,14 +3550,14 @@ function renderTalents(){
   if(state.talents.length===0 && !cls) c.appendChild(el('<div class="empty-effects"><div class="empty-effects-icon">✦</div>Nenhum talento</div>'));
   state.talents.forEach((t,i)=>{
     const on=talentActive(t);
-    const diceTxt = (t.dice&&t.dice.die)?`+D${t.dice.die} em ${(t.dice.cats||[]).join('/')}${t.dice.doubleWhen&&t.dice.doubleWhen!=='none'?` (×2 ${t.dice.doubleWhen==='above-half'?'acima½':'abaixo½'})`:''}`:'';
+    const diceTxt = (t.dice&&t.dice.die)?`+D${t.dice.die} em ${(t.dice.cats||[]).join('/')}${t.dice.doubleWhen&&t.dice.doubleWhen!=='none'?` (+${pctDado(t.dice)}% ${t.dice.doubleWhen==='above-half'?'acima½':'abaixo½'})`:''}`:'';
     const modsTxt = (t.mods||[]).map(m=>modLabel(m)+(t.gate==='stacks'?'/acúmulo':'')).join(' · ');
     const card=el(`<div class="card-item${t.active===false?' off':''}">
       <div class="card-head"><div class="card-name">${esc(t.nome)} ${on?'<span class="tag tag-green" style="font-size:9px">ativo</span>':'<span class="muted">(inativo)</span>'}</div>
         <div class="card-actions"><label class="switch sm" title="Ativo"><input type="checkbox" ${t.active!==false?'checked':''}><span class="slider"></span></label><button class="btn-mini" title="Editar">✎</button><button class="btn-mini del" title="Remover">✕</button></div></div>
       <div class="card-meta"><span>${esc(t.badge||'')}</span><span>Nível ${t.nivel||0}</span><span>${esc(t.nivelacao||'Padrão')}</span><span>Gatilho: ${GATE_LABEL[t.gate]||'Sempre'}</span></div>
       ${(modsTxt||diceTxt)?`<div class="buff-mods">${modsTxt?`<span class="m">${esc(modsTxt)}</span>`:''}${diceTxt?`<span class="m" style="color:var(--uni)">${esc(diceTxt)}</span>`:''}</div>`:''}
-      <div class="card-desc">${esc(t.desc||'')}</div>
+      <div class="card-desc">${esc(interpolarTags(t.desc||''))}</div>
     </div>`);
     if(t.gate==='stacks'){
       const cur=clamp(t.stacks||0,0,t.stacksMax||3), tot=(t.mods||[]).map(m=>modLabel({...m,value:m.value*cur})).join(' · ');
@@ -3490,9 +3580,7 @@ function renderWeapons(){
       const n=Math.floor(evalFormula(e.acumuloFormula,0)), dur=Math.floor(evalFormula(e.duracaoFormula,0));
       return `${meta?meta.name:e.efeito}${n?` ${n}`:''}${dur?`/${dur}`:''}`;
     });
-    const tetoConsec=num(w.consecutivoMax)||0;
-    const accAtual=clamp(num(w.acc),0,tetoConsec);
-    const bonusConsec=accAtual?Math.floor(evalFormula(w.consecutivoFormula,0))*accAtual:0;
+    const especiais=w.especiais||[];
     const catLbl=(WEAPON_CATS.find(c=>c[0]===w.categoria)||[])[1];
     const card=el(`<div class="card-item weapon-card">
       <div class="card-head"><div class="card-name">${esc(w.nome)}${w.mao?` <span class="tag tag-green" style="font-size:9px">${esc(maoLabel(w.mao))}</span>`:''}</div>
@@ -3503,21 +3591,26 @@ function renderWeapons(){
         <select class="wp-mao" title="Onde está equipada"></select>
       </div>
       ${tags.length?`<div class="row" style="gap:4px;flex-wrap:wrap;margin-bottom:6px">${tags.map(t=>`<span class="tag tag-amber">${esc(t)}</span>`).join('')}</div>`:''}
-      ${w.desc?`<div class="card-desc">${esc(w.desc)}</div>`:''}
-      ${tetoConsec?`<div class="muted">Ataques consecutivos no mesmo alvo · <b style="color:var(--gold)">+${bonusConsec} de dano agora</b></div><div class="acc-tracker"></div>
-      <div class="row" style="gap:6px;margin-top:6px"><button class="btn-primary att">Acertou de novo (+1)</button><button class="btn-ghost reset">Zerar</button></div>`:''}
+      ${w.desc?`<div class="card-desc">${esc(interpolarTags(w.desc))}</div>`:''}
+      ${especiais.map((e,j)=>especialAtivo(e)
+        ? `<div class="esp-bloco" data-esp="${j}"><div class="muted">${esc(e.nome||'Efeito especial')} · <b style="color:var(--gold)">+${bonusEspecial(e)} de dano agora</b></div><div class="acc-tracker"></div>
+           <div class="row" style="gap:6px;margin-top:6px"><button class="btn-primary att">+1</button><button class="btn-ghost reset">Zerar</button></div></div>`
+        : (e.nome?`<div class="esp-bloco muted">${esc(e.nome)}</div>`:'')).join('')}
     </div>`);
-    if(tetoConsec){ const tr=card.querySelector('.acc-tracker'); for(let j=0;j<tetoConsec;j++) tr.appendChild(el(`<div class="acc-seg ${j<accAtual?'on':''}"></div>`)); }
+    especiais.forEach((e,j)=>{
+      const bloco=card.querySelector(`.esp-bloco[data-esp="${j}"]`); if(!bloco) return;
+      const teto=num(e.max), atual=clamp(num(e.acc),0,teto);
+      const tr=bloco.querySelector('.acc-tracker');
+      for(let k=0;k<teto;k++) tr.appendChild(el(`<div class="acc-seg ${k<atual?'on':''}"></div>`));
+      bloco.querySelector('.att').onclick=()=>{ e.acc=Math.min(teto,num(e.acc)+1); save(); renderWeapons(); renderRollSummary(); renderCombate(); toast(`${w.nome} · ${e.nome||'especial'}: ${e.acc}/${teto}`,'sucesso'); };
+      bloco.querySelector('.reset').onclick=()=>{ e.acc=0; save(); renderWeapons(); renderRollSummary(); renderCombate(); };
+    });
     const selCat=card.querySelector('.wp-cat'), selMao=card.querySelector('.wp-mao');
     WEAPON_CATS.forEach(([v,l])=>selCat.appendChild(el(`<option value="${v}">${esc(l)}</option>`)));
     WEAPON_MAOS.forEach(([v,l])=>selMao.appendChild(el(`<option value="${v}">${esc(l)}</option>`)));
     selCat.value=w.categoria||'fisicas'; selMao.value=w.mao||'';
     selCat.onchange=()=>{ w.categoria=selCat.value; save(); renderWeapons(); renderRollSummary(); };
     selMao.onchange=()=>{ equiparArma(w, selMao.value); save(); renderWeapons(); renderRollSummary(); };
-    if(tetoConsec){
-      card.querySelector('.att').onclick=()=>{ w.acc=Math.min(tetoConsec,(w.acc||0)+1); save(); renderWeapons(); renderRollSummary(); renderCombate(); toast(`${w.nome}: acúmulo ${w.acc}/${tetoConsec}`,'sucesso'); };
-      card.querySelector('.reset').onclick=()=>{ w.acc=0; save(); renderWeapons(); renderRollSummary(); renderCombate(); };
-    }
     card.querySelector('.btn-mini:not(.del)').onclick=()=>openItemEditor('weapons',i);
     card.querySelector('.del').onclick=()=>{ if(confirm('Remover arma "'+w.nome+'"?')){ state.weapons.splice(i,1); save(); renderWeapons(); recompute(); } };
     const mb=itemModBar('weapons',i); if(mb) card.appendChild(mb);
@@ -3531,7 +3624,7 @@ function renderEquip(){
       <div class="card-head"><div class="card-name" style="font-size:12px">${esc(e.nome)}</div>
         <div class="card-actions"><button class="btn-mini" title="Editar">✎</button><button class="btn-mini del" title="Remover">✕</button></div></div>
       <div class="card-meta"><span>${esc(e.slot||'')}</span><span>${esc(e.peso||'')}</span>${e.bonus?`<span class="tag tag-green">${esc(e.bonus)}</span>`:''}</div>
-      ${e.desc?`<div class="card-desc">${esc(e.desc)}</div>`:''}
+      ${e.desc?`<div class="card-desc">${esc(interpolarTags(e.desc))}</div>`:''}
     </div>`);
     card.querySelector('.btn-mini:not(.del)').onclick=()=>openItemEditor('equip',i);
     card.querySelector('.del').onclick=()=>{ if(confirm('Remover equipamento "'+e.nome+'"?')){ state.equip.splice(i,1); save(); renderEquip(); recompute(); } };
@@ -3545,7 +3638,10 @@ function renderInv(){
     // com peso por lote ("0,5 kg / 3000") o texto sozinho engana: mostra o que a linha pesa de fato
     const kg=pesoItem(it.peso, it.qty);
     const pesoTxt = pesoLote(it.peso)>1 ? `${esc(it.peso)} → ${kg.toFixed(2)} kg` : esc(it.peso||'');
-    const r=el(`<div class="inv-row"><div class="inv-main">${esc(it.nome)} <span class="muted">×${it.qty||1}</span></div><span class="mono muted" title="${kg.toFixed(3)} kg no total">${pesoTxt}</span><button class="btn-mini" title="Editar">✎</button><button class="btn-mini del" title="Remover">✕</button><div class="inv-desc">${esc(it.desc||'')}</div></div>`);
+    // ponytail: title nativo basta — as descrições aqui vão de 0 a ~150 caracteres e o title
+    // respeita o \n delas. Tooltip próprio só se precisar de toque (title não abre no celular).
+    const dica = it.desc ? ` title="${esc(it.desc)}"` : '';
+    const r=el(`<div class="inv-row"${dica}><div class="inv-main">${esc(it.nome)} <span class="muted">×${it.qty||1}</span></div><span class="mono muted" title="${kg.toFixed(3)} kg no total">${pesoTxt}</span><button class="btn-mini" title="Editar">✎</button><button class="btn-mini del" title="Remover">✕</button><div class="inv-desc">${esc(it.desc||'')}</div></div>`);
     r.querySelector('.inv-main').onclick=keepToggle('inv:'+(it.nome||i), r);
     r.querySelector('.btn-mini:not(.del)').onclick=()=>openItemEditor('inventory',i);
     r.querySelector('.del').onclick=()=>{ if(confirm('Remover item "'+it.nome+'"?')){ state.inventory.splice(i,1); save(); recompute(); } };
@@ -3567,6 +3663,14 @@ const CAMPOS_CP_STATUS=[{k:'nome',l:'Status',flex:'2'},{k:'cur',l:'Atual',t:'num
 const CAMPOS_CP_PERICIA=[{k:'nome',l:'Perícia',flex:'2'},{k:'mod',l:'Mod',t:'number'}];
 const CAMPOS_CP_HABILIDADE=[{k:'nome',l:'Habilidade',flex:'1'},{k:'desc',l:'O que faz',t:'textarea',flex:'3'}];
 const CAMPOS_RAIO=[{k:'formula',l:'Raio em m (ou fórmula)',flex:'1'},{k:'texto',l:'O que acontece nesse raio',t:'textarea',flex:'3'}];
+/* ponytail: "dano extra por ataque consecutivo" era um par de campos fixos no schema da arma —
+   útil só para a tonfa do Lotharion e para mais ninguém. Virou lista: cada arma declara os
+   efeitos especiais que tiver, com o nome que quiser. Fórmula vazia = efeito só textual, sem
+   contador; com fórmula e teto, ganha o acumulador e soma ao dano. */
+const CAMPOS_ESPECIAL=[
+  {k:'nome',l:'Nome do efeito (ex.: ataque consecutivo no mesmo alvo)',flex:'3'},
+  {k:'formula',l:'Bônus por acúmulo (vazio = sem conta)',flex:'1'},
+  {k:'max',l:'Teto',t:'number',flex:'0 0 70px'}];
 const ITEM_SCHEMAS = {
   weapons:{ title:'Arma', render:'renderWeapons', fields:[
     {k:'nome',l:'Nome',t:'text',full:true},{k:'tipo',l:'Tipo (texto livre)',t:'text'},
@@ -3575,14 +3679,13 @@ const ITEM_SCHEMAS = {
     {k:'mao',l:'Equipada em',t:'select',opts:[['','Não equipada'],['principal','Mão principal'],['secundaria','Mão secundária'],['duas','Duas mãos']]},
     {k:'peso',l:'Peso (ex.: 500g · 1,5 kg)',t:'text'},
     {k:'active',l:'Bônus ativo agora',t:'check'},
-    {k:'consecutivoFormula',l:'Dano extra por ataque consecutivo no mesmo alvo',t:'formula'},
-    {k:'consecutivoMax',l:'Teto de acúmulos consecutivos',t:'number'},
+    {k:'especiais',l:'Efeitos especiais desta arma (nome e regra à sua escolha)',t:'lista',campos:CAMPOS_ESPECIAL,addLbl:'Efeito especial',full:true,opcional:true},
     {k:'efeitosAlvo',l:'Efeito ao contato (aplicado no alvo ao acertar)',t:'efeitosalvo',full:true},
     {k:'desc',l:'Descrição / Efeitos',t:'textarea',full:true},
     {k:'mods',l:'Modificadores (aplicados quando equipada e ativa)',t:'mods',full:true},
     {k:'diceList',l:'Dados bônus da arma (efeitos personalizados)',t:'dicelist',full:true}],
-    def:{nome:'Nova Arma',tipo:'',dano:'D4',categoria:'fisicas',mao:'',peso:'',desc:'',acc:0,active:false,
-         consecutivoFormula:'',consecutivoMax:0,mods:[],diceList:[],efeitosAlvo:[]} },
+    def:{nome:'Nova Arma',tipo:'',dano:'D4',categoria:'fisicas',mao:'',peso:'',desc:'',active:false,
+         especiais:[],mods:[],diceList:[],efeitosAlvo:[]} },
   equip:{ title:'Equipamento', render:'renderEquip', fields:[
     {k:'nome',l:'Nome',t:'text',full:true},{k:'slot',l:'Equipado em',t:'text'},{k:'peso',l:'Peso (ex.: 500g · 1,5 kg)',t:'text'},
     {k:'bonus',l:'Bônus (texto)',t:'text',full:true},{k:'active',l:'Bônus ativo agora',t:'check'},
@@ -3597,15 +3700,19 @@ const ITEM_SCHEMAS = {
     {k:'mods',l:'Modificadores (aplicados quando ativo)',t:'mods',full:true}],
     def:{nome:'Novo Item',qty:1,peso:'',desc:'',active:false,mods:[]} },
   talents:{ title:'Talento', render:'renderTalents', fields:[
-    {k:'nome',l:'Nome',t:'text',full:true},{k:'badge',l:'Estilo',t:'text'},{k:'nivel',l:'Nível',t:'number'},
+    // ponytail: o livro (Sistema de Tranpasse, seção de Talentos) só define Estilo como
+    // Passivo ou Ativo. Era campo de texto livre; virou select com esses dois. Talento salvo
+    // com outro texto não some — openItemEditor acrescenta a opção "(indisponível)".
+    {k:'nome',l:'Nome',t:'text',full:true},{k:'badge',l:'Estilo',t:'select',opts:['Passivo','Ativo']},{k:'nivel',l:'Nível',t:'number'},
     {k:'nivelacao',l:'Nivelação',t:'select',opts:['Padrão','Bronze','Prata','Ouro']},
     {k:'active',l:'Ativo',t:'check'},
-    {k:'gate',l:'Gatilho',t:'select',opts:[['always','Sempre'],['above-half','Acima da metade da vida'],['below-half','Abaixo da metade da vida'],['stacks','Por acúmulo (com teto)']]},
-    {k:'stacksMax',l:'Teto de acúmulos',t:'number'},
-    {k:'raios',l:'Raios de ação (aparecem no Resumo de Combate) — aceita {tag}',t:'lista',campos:CAMPOS_RAIO,addLbl:'Raio',full:true},
-    {k:'desc',l:'Descrição',t:'textarea',full:true},
-    {k:'mods',l:'Modificadores (×acúmulo quando gatilho = por acúmulo)',t:'mods',full:true},
-    {k:'dice',l:'Dado bônus em rolagens',t:'dice',full:true}],
+    // opcional:true = bloco escondido até o usuário adicionar (ou já ter conteúdo salvo)
+    {k:'gate',l:'Gatilho',t:'select',opcional:true,opts:[['always','Sempre'],['above-half','Acima da metade da vida'],['below-half','Abaixo da metade da vida'],['stacks','Por acúmulo (com teto)']]},
+    {k:'stacksMax',l:'Teto de acúmulos',t:'number',opcional:true,bloco:'gate'},
+    {k:'raios',l:'Raios de ação (aparecem no Resumo de Combate) — aceita {tag}',t:'lista',campos:CAMPOS_RAIO,addLbl:'Raio',full:true,opcional:true},
+    {k:'desc',l:'Descrição — aceita {tag} e {conta}, ex.: {Medicina} ou {0.3 x Medicina}',t:'textarea',full:true},
+    {k:'mods',l:'Modificadores (×acúmulo quando gatilho = por acúmulo)',t:'mods',full:true,opcional:true},
+    {k:'dice',l:'Dado bônus em rolagens',t:'dice',full:true,opcional:true}],
     def:{nome:'Novo Talento',badge:'Passivo',nivel:0,nivelacao:'Padrão',active:true,gate:'always',stacks:0,stacksMax:3,desc:'',mods:[],dice:null} },
   tecnicas:{ title:'Técnica', render:'renderTechs', fields:[
     {k:'nome',l:'Nome',t:'text',full:true},
@@ -3705,16 +3812,21 @@ function buildDiceEditor(container, data, key){
   [[0,'Nenhum'],[4,'D4'],[6,'D6'],[8,'D8'],[10,'D10'],[12,'D12'],[20,'D20']].forEach(([v,l])=>{ const o=el(`<option value="${v}">${l}</option>`); if((cur.die||0)===v)o.selected=true; dieSel.appendChild(o); });
   const catsWrap=el('<div class="dice-cats"></div>');
   ROLL_CATS.forEach(([v,l])=>{ const id='dc_'+v; const lab=el(`<label class="dice-cat"><input type="checkbox" ${(cur.cats||[]).includes(v)?'checked':''}> ${l}</label>`); lab.querySelector('input').dataset.cat=v; catsWrap.appendChild(lab); });
-  const dblSel=el('<select title="Dobrar quando"></select>');
-  [['none','Nunca dobrar'],['above-half','Dobrar acima da metade da vida'],['below-half','Dobrar abaixo da metade da vida']].forEach(([v,l])=>{ const o=el(`<option value="${v}">${l}</option>`); if((cur.doubleWhen||'none')===v)o.selected=true; dblSel.appendChild(o); });
+  const dblSel=el('<select title="Quando o bônus se aplica"></select>');
+  [['none','Nunca ampliar'],['above-half','Ampliar acima da metade da vida'],['below-half','Ampliar abaixo da metade da vida']].forEach(([v,l])=>{ const o=el(`<option value="${v}">${l}</option>`); if((cur.doubleWhen||'none')===v)o.selected=true; dblSel.appendChild(o); });
+  // ponytail: "dobrar" deixou de ser fixo. 100% = o dobro de antes; 25, 10, o que for.
+  const pctWrap=el('<label class="dice-pct">Ampliar em <input type="number" step="5" style="width:64px"> %</label>');
+  const pctInp=pctWrap.querySelector('input');
+  pctInp.value = (cur.bonusPct==null) ? 100 : cur.bonusPct;
   const sync=()=>{
     const die=parseInt(dieSel.value)||0;
+    pctWrap.style.display = (dblSel.value==='none') ? 'none' : '';
     if(!die){ data[key]=null; return; }
     const cats=[...catsWrap.querySelectorAll('input:checked')].map(i=>i.dataset.cat);
-    data[key]={die, cats, doubleWhen:dblSel.value};
+    data[key]={die, cats, doubleWhen:dblSel.value, bonusPct:num(pctInp.value)};
   };
-  dieSel.onchange=sync; dblSel.onchange=sync; catsWrap.querySelectorAll('input').forEach(i=>i.onchange=sync);
-  container.append(el('<div class="muted">Dado bônus somado às rolagens das categorias marcadas (deixe "Nenhum" para desligar).</div>'), dieSel, catsWrap, dblSel);
+  dieSel.onchange=sync; dblSel.onchange=sync; pctInp.oninput=sync; catsWrap.querySelectorAll('input').forEach(i=>i.onchange=sync);
+  container.append(el('<div class="muted">Dado bônus somado às rolagens das categorias marcadas (deixe "Nenhum" para desligar).</div>'), dieSel, catsWrap, dblSel, pctWrap);
   sync();
 }
 function buildDiceListEditor(container, arr){
@@ -4038,6 +4150,38 @@ function redesenharItemForm(){
   coletarItemForm();
   openItemEditor(editorCtx.type, editorCtx.index, editorCtx.data);
 }
+/* ---- Blocos opcionais do editor ----------------------------------------------------------
+   Campos marcados com opcional:true não aparecem de cara: o formulário abre enxuto e o usuário
+   adiciona só o que o talento (ou a arma) realmente usa. Nada muda no objeto salvo — "presente"
+   é derivado do próprio conteúdo, então um talento já existente abre com os blocos que preenche.
+   f.bloco:'outroCampo' amarra o campo ao bloco de outro (o teto de acúmulos segue o gatilho). */
+function blocoChave(f){ return f.bloco || f.k; }
+function blocoPresente(sch, chave, data){
+  const f=sch.fields.find(x=>x.k===chave); if(!f) return false;
+  const v=data[chave];
+  if(f.t==='dice')   return !!(v && v.die);
+  if(f.t==='select') return v!=null && v!=='' && v!=='always';
+  if(Array.isArray(v)) return v.length>0;
+  return !!v;
+}
+function blocoRotulo(f){ return String(f.l||f.k).split(/\s+[—(]/)[0].trim(); }
+function semearBloco(sch, chave, data){
+  const f=sch.fields.find(x=>x.k===chave); if(!f) return;
+  if(f.t==='dice')      data[chave]={die:4,cats:[],doubleWhen:'none',bonusPct:100};
+  else if(f.t==='mods'||f.t==='terms') data[chave]=[{target:'dano',value:1}];
+  else if(f.t==='select') data[chave]=(f.opts||[]).map(o=>Array.isArray(o)?o[0]:o).find(v=>v&&v!=='always')||'';
+  else if(f.t==='lista'||f.t==='efeitos'||f.t==='efeitosalvo'||f.t==='acoes'||f.t==='dicelist') data[chave]=[{}];
+  else data[chave]=(f.t==='number')?1:'';
+}
+function limparBloco(sch, chave, data){
+  const f=sch.fields.find(x=>x.k===chave); if(!f) return;
+  if(f.t==='dice') data[chave]=null;
+  else if(Array.isArray(data[chave])) data[chave]=[];
+  else if(f.t==='select') data[chave]='always';
+  else data[chave]=(f.t==='number')?0:'';
+  // campos amarrados a este bloco voltam ao default junto
+  sch.fields.filter(x=>x.bloco===chave).forEach(x=>{ data[x.k]=(x.t==='number')?0:''; });
+}
 function openItemEditor(type, index, dataExistente){
   const sch=ITEM_SCHEMAS[type]; if(!sch) return;
   const isNew=(index==null);
@@ -4048,8 +4192,14 @@ function openItemEditor(type, index, dataExistente){
   const form=document.getElementById('itemForm'); form.innerHTML='';
   sch.fields.forEach(f=>{
     if(f.showIf && !f.showIf(data)) return;             // ex.: efeitos só valem se a técnica for ativável
+    if(f.opcional && !blocoPresente(sch, blocoChave(f), data)) return;   // bloco ainda não adicionado
     const full=(f.full||f.t==='mods'||f.t==='dice'||f.t==='terms'||f.t==='dicelist'||f.t==='efeitos'||f.t==='efeitosalvo'||f.t==='acoes'||f.t==='lista');
     const wrap=el(`<div class="form-field${full?' full':''}"><label>${f.l}</label></div>`);
+    if(f.opcional && blocoChave(f)===f.k){               // só o campo dono do bloco ganha o ✕
+      const x=el('<button type="button" class="btn-mini del bloco-x" title="Remover este bloco">✕</button>');
+      x.onclick=()=>{ limparBloco(sch, f.k, data); redesenharItemForm(); };
+      wrap.querySelector('label').appendChild(x);
+    }
     if(f.t==='formula'){ buildFormulaField(wrap, data, f.k, {comDados:!!f.comDados}); form.appendChild(wrap); return; }
     if(f.t==='efeitos'||f.t==='efeitosalvo'){ if(!Array.isArray(data[f.k])) data[f.k]=[]; const box=el('<div class="mods-editor"></div>'); buildEfeitosEditor(box, data[f.k], {soAlvo:f.t==='efeitosalvo'}); wrap.appendChild(box); form.appendChild(wrap); return; }
     if(f.t==='acoes'){ if(!Array.isArray(data[f.k])) data[f.k]=[]; const box=el('<div class="mods-editor"></div>'); buildAcoesEditor(box, data[f.k]); wrap.appendChild(box); form.appendChild(wrap); return; }
@@ -4072,6 +4222,19 @@ function openItemEditor(type, index, dataExistente){
     if(f.reflow) inp.addEventListener('change',()=>{ data[f.k]=(f.t==='check')?inp.checked:inp.value; redesenharItemForm(); });
     wrap.appendChild(inp); form.appendChild(wrap);
   });
+  // seletor dos blocos ainda ausentes — a UI começa enxuta e cresce só no que o usuário pedir
+  const ausentes=sch.fields.filter(f=>f.opcional && blocoChave(f)===f.k
+                                    && !blocoPresente(sch,f.k,data)
+                                    && !(f.showIf && !f.showIf(data)));
+  if(ausentes.length){
+    const add=el(`<div class="form-field full add-bloco"><select><option value="">+ Adicionar ao ${esc(sch.title.toLowerCase())}…</option>${ausentes.map(f=>`<option value="${esc(f.k)}">${esc(blocoRotulo(f))}</option>`).join('')}</select></div>`);
+    add.querySelector('select').onchange=e=>{
+      if(!e.target.value) return;
+      semearBloco(sch, e.target.value, data);
+      redesenharItemForm();                    // ele já chama coletarItemForm antes de redesenhar
+    };
+    form.appendChild(add);
+  }
   document.getElementById('settingsModal').classList.remove('active');
   document.getElementById('itemModal').classList.add('active');
 }
@@ -4098,6 +4261,8 @@ function applyTheme(){
   for(const k in vars) document.documentElement.style.setProperty(k, vars[k]);
   const fs=s.fontScale||13; document.documentElement.style.setProperty('--desc-fs', fs+'px');
   document.body.style.zoom = s.uiZoom||1;   // escala TODOS os textos/UI
+  // ...e o CSS precisa saber do zoom para descontá-lo de qualquer teto em vh (ver .modal)
+  document.documentElement.style.setProperty('--zoom', s.uiZoom||1);
 }
 function openSettings(){
   const grid=document.getElementById('themeGrid'); grid.innerHTML='';
@@ -4151,7 +4316,7 @@ function renderCompanions(){
         <div class="cp-id">
           <div class="cp-nome runic">${esc(cp.nome||'(sem nome)')}</div>
           <div class="card-meta">${cp.especie?`<span>${esc(cp.especie)}</span>`:''}${cp.nivel?`<span>Nível ${esc(String(cp.nivel))}</span>`:''}${cp.dano?`<span>Dano ${esc(cp.dano)}</span>`:''}${cp.mobilidade?`<span>Mob ${esc(cp.mobilidade)}</span>`:''}</div>
-          ${cp.desc?`<div class="card-desc">${esc(cp.desc)}</div>`:''}
+          ${cp.desc?`<div class="card-desc">${esc(interpolarTags(cp.desc))}</div>`:''}
         </div>
         <div class="card-actions"><button class="btn-mini" title="Editar">✎</button><button class="btn-mini del" title="Remover">✕</button></div>
       </div>
@@ -4212,6 +4377,13 @@ document.getElementById('nextRoundBtn').onclick=()=>{
 };
 function closeModal(id){ document.getElementById(id).classList.remove('active'); }
 document.querySelectorAll('.modal-bg').forEach(m=> m.addEventListener('click',e=>{ if(e.target===m) m.classList.remove('active'); }));
+// Clique numa descrição expande/encolhe. Delegado no document: vale para toda lista que já
+// existe e para qualquer uma que venha depois, sem tocar em nenhum renderer. Não dispara se
+// você estiver selecionando texto para copiar.
+document.addEventListener('click',e=>{
+  const d=e.target.closest('.card-desc,.mec-desc');
+  if(d && String(getSelection()||'')==='') d.classList.toggle('aberta');
+});
 document.getElementById('fabDice').onclick=()=>document.getElementById('diceModal').classList.add('active');
 
 const nameEl=document.getElementById('charName');
