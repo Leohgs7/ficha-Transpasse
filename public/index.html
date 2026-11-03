@@ -416,6 +416,8 @@ select.id-input{cursor:pointer}
 .nb-btn:hover{background:var(--surface-3);border-color:var(--border);color:var(--gold)}
 .nb-sep{width:1px;height:18px;background:var(--border);margin:0 3px}
 .nb-info{margin-left:auto;font-size:10px;color:var(--text-mute);font-family:'JetBrains Mono',monospace}
+.hist-linha{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:7px 8px;border-bottom:1px solid var(--border);font-size:11px}
+.hist-linha:hover{background:var(--surface-3)}
 /* prévia da importação de documento */
 .imp-linha{display:grid;grid-template-columns:18px 1fr 90px 16px 90px;gap:8px;align-items:center;padding:4px 6px;border-radius:4px;font-size:11px;cursor:pointer}
 .imp-linha:hover{background:var(--surface-3)}
@@ -649,6 +651,7 @@ body.leitura #btnFichas,body.leitura #btnEntrar{pointer-events:auto;opacity:1}
     <button class="btn" id="btnCompartilhar" onclick="abrirCompartilhar()" style="display:none">🔗 Compartilhar</button>
     <button class="btn btn-primary" onclick="forceSave()">💾 Salvar</button>
     <button class="btn" onclick="openSettings()">⚙ Configurações</button>
+    <button class="btn" onclick="abrirHistorico()" title="Versões anteriores guardadas neste navegador">⟲ Histórico</button>
     <button class="btn" onclick="exportJSON()">⬇ Exportar</button>
     <button class="btn" onclick="document.getElementById('imp').click()">⬆ Importar</button>
     <input id="imp" type="file" accept="application/json" style="display:none" onchange="importJSON(event)">
@@ -812,6 +815,19 @@ body.leitura #btnFichas,body.leitura #btnEntrar{pointer-events:auto;opacity:1}
 </div>
 
 <button class="fab" id="fabDice" title="Rolar dados">🎲</button>
+
+<!-- Histórico local: versões anteriores da ficha, para desfazer sobrescrita -->
+<div class="modal-bg" id="histModal">
+  <div class="modal" style="max-width:620px">
+    <h3>⟲ Histórico desta ficha</h3>
+    <div class="muted" style="margin-bottom:10px">Guardado só neste navegador. A nuvem mantém apenas a última versão, então é aqui que se desfaz uma sobrescrita.</div>
+    <div id="histCorpo"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="baixarHistorico()">⬇ Baixar tudo</button>
+      <button class="btn-ghost" onclick="closeModal('histModal')">Fechar</button>
+    </div>
+  </div>
+</div>
 
 <!-- Prévia de importação de PDF/DOCX: mostra o que mudaria ANTES de encostar na ficha -->
 <div class="modal-bg" id="importModal">
@@ -1831,6 +1847,9 @@ async function abrirFichaPorId(id){
     const {data,error}=await sb.from('fichas').select('*').eq('id',id).maybeSingle();
     if(error) throw error;
     if(!data){ statusNuvem('ficha não encontrada','erro'); return; }
+    // Momento exato em que dado local pode ser perdido: o state atual é substituído pelo da
+    // nuvem. Fotografa o que está saindo ANTES de trocar, e o que entrou logo depois.
+    fotografar('antes de abrir ficha da nuvem');
     fichaId=data.id; donoDaFicha=data.dono;
     const ehMinha = !!usuario && data.dono===usuario.id;
     // o Mestre edita a ficha de qualquer jogador; os demais só leem
@@ -1851,7 +1870,95 @@ async function abrirFichaPorId(id){
     statusNuvem(somenteLeitura?'👁 leitura':(ehMinha?'na nuvem':'⚜ mestre'),'on');
   }catch(e){ statusNuvem('erro ao abrir','erro'); console.error(e); }
 }
+/* =========================================================================
+   HISTÓRICO LOCAL  —  rede de proteção contra sobrescrita
+   A nuvem guarda UMA versão: sincronizar() faz UPDATE e o que estava lá some.
+   Não havia como voltar atrás. Agora toda versão relevante é fotografada aqui
+   antes de qualquer coisa poder substituí-la, com carimbo de hora, e dá para
+   restaurar pelo botão ⟲ Histórico.
+   ========================================================================= */
+const KEY_HIST="ficha_tranpasse_hist_v1";
+const HIST_MAX=20, HIST_INTERVALO=4*60*1000;      // no máximo uma foto a cada 4 min
+function lerHistorico(){ try{ return JSON.parse(localStorage.getItem(KEY_HIST))||[]; }catch(e){ return []; } }
+function gravarHistorico(lista){
+  // localStorage tem ~5 MB. Se não couber, descarta as mais antigas até caber.
+  while(lista.length){
+    try{ localStorage.setItem(KEY_HIST, JSON.stringify(lista)); return true; }
+    catch(e){ lista.shift(); }
+  }
+  return false;
+}
+function fotografar(motivo, dados){
+  const alvo=dados||state;
+  if(!alvo || !alvo.basicos) return;
+  const lista=lerHistorico();
+  const ultima=lista[lista.length-1];
+  const agora=Date.now();
+  // guarda sempre que o motivo for crítico; senão respeita o intervalo
+  const critico=/antes de|importa|nuvem/i.test(motivo);
+  if(!critico && ultima && agora-ultima.t < HIST_INTERVALO) return;
+  const foto={ t:agora, motivo, nome:(alvo.basicos.nome||'Sem nome'), dados:JSON.parse(JSON.stringify(alvo)) };
+  if(ultima && JSON.stringify(ultima.dados)===JSON.stringify(foto.dados)) return;   // nada mudou
+  lista.push(foto);
+  gravarHistorico(desbastar(lista));
+}
+/* Desbaste exponencial. Jogar fora sempre a mais antiga daria 20 fotos cobrindo só os
+   últimos ~80 minutos — inútil para "volte para ontem às 22h". Em vez disso, quando passa
+   do teto, descarta a foto que está mais perto temporalmente da vizinha: o que sobra é uma
+   escada que fica densa perto de agora e esparsa no passado, cobrindo dias com 20 slots.
+   A mais nova e a mais antiga nunca são descartadas. */
+const HIST_RECENTES=5;                          // as N mais novas nunca são desbastadas
+function desbastar(lista){
+  while(lista.length>HIST_MAX){
+    // candidatas: tudo menos a mais antiga (âncora do passado) e as HIST_RECENTES mais novas
+    // (que servem para desfazer o que acabou de acontecer). Entre elas, sai a que menos
+    // reduz a cobertura: aquela cujas vizinhas já estão próximas no tempo.
+    const fim=lista.length-HIST_RECENTES;
+    let alvo=1, menor=Infinity;
+    for(let i=1;i<fim;i++){
+      const vao=lista[i+1].t-lista[i-1].t;
+      if(vao<menor){ menor=vao; alvo=i; }
+    }
+    lista.splice(alvo,1);
+  }
+  return lista;
+}
+function restaurarDoHistorico(i){
+  const lista=lerHistorico(), f=lista[i]; if(!f) return;
+  const quando=new Date(f.t).toLocaleString('pt-BR');
+  if(!confirm(`Restaurar a ficha de ${quando}?\n\n${f.nome}\n\nA versão atual é fotografada antes, então dá para desfazer.`)) return;
+  fotografar('antes de restaurar');
+  state=deepMerge(fichaEmBranco(), migrar(JSON.parse(JSON.stringify(f.dados))));
+  save(); renderAll(); recompute(); closeModal('histModal');
+  toast('Ficha restaurada para '+quando,'sucesso');
+}
+function abrirHistorico(){
+  const lista=lerHistorico(), c=document.getElementById('histCorpo');
+  c.innerHTML='';
+  if(!lista.length){ c.appendChild(el('<div class="muted">Nenhuma versão guardada ainda. A partir de agora, cada alteração relevante vira uma foto aqui.</div>')); }
+  [...lista].reverse().forEach((f,ri)=>{
+    const i=lista.length-1-ri;
+    const d=new Date(f.t);
+    const linha=el(`<div class="hist-linha">
+      <div><b>${d.toLocaleString('pt-BR')}</b> <span class="muted">· ${esc(f.motivo)}</span><br>
+      <span class="muted" style="font-size:10px">${esc(f.nome)} · ${(JSON.stringify(f.dados).length/1024).toFixed(0)} KB</span></div>
+      <button class="btn-mini">Restaurar</button></div>`);
+    linha.querySelector('button').onclick=()=>restaurarDoHistorico(i);
+    c.appendChild(linha);
+  });
+  document.getElementById('histModal').classList.add('active');
+}
+function baixarHistorico(){
+  const b=new Blob([JSON.stringify(lerHistorico(),null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(b);
+  a.download='historico-ficha-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+}
+
+/* `?nosync=1` na URL desliga a gravação na nuvem. É o que se usa para testar a
+   ficha sem risco de empurrar dado de teste por cima da ficha de verdade. */
+const SEM_NUVEM = new URLSearchParams(location.search).has('nosync');
 async function sincronizar(){
+  if(SEM_NUVEM){ statusNuvem('nuvem desligada (nosync)','erro'); return; }
   if(!nuvemAtiva() || !usuario || !fichaId || somenteLeitura) return;
   try{
     statusNuvem('salvando…','');
@@ -1985,6 +2092,7 @@ function gravar(){
 function save(){
   if(somenteLeitura) return;
   clearTimeout(saveTimer); saveTimer=setTimeout(gravar,150);
+  fotografar('edição');                          // respeita o intervalo, não fotografa a cada tecla
   agendarSync();                                 // nuvem espera mais um pouco para não conversar a cada tecla
 }
 function forceSave(){
