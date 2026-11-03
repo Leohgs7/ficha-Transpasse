@@ -233,6 +233,8 @@ select.id-input{cursor:pointer}
 .coll-icon{width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:14px}
 .coll-name{font-size:13px;font-weight:600;letter-spacing:.08em;text-transform:uppercase}
 .coll-mod{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-mute)}
+.coll-tipo{background:transparent;border:1px solid var(--border);border-radius:4px;color:var(--text-mute);font-size:9px;padding:2px 3px;max-width:74px}
+.coll-tipo:hover{border-color:var(--border-strong);color:var(--text-dim)}
 .coll-mod input{width:42px;background:var(--bg-2);border:1px solid var(--border);border-radius:4px;text-align:center;font-family:'JetBrains Mono',monospace;color:var(--gold);padding:2px}
 .coll-arrow{color:var(--text-mute);transition:transform .25s}
 .coll-head.open .coll-arrow{transform:rotate(90deg)}
@@ -286,6 +288,22 @@ select.id-input{cursor:pointer}
 /* ============================== CARDS (tech/talent/weapon/equip/inv) ============================== */
 .card-item{background:var(--surface-3);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:8px;position:relative}
 .card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:4px}
+/* ---- Colapso em três níveis: painel > card > descrição -------------------------------
+   O seletor esconde tudo que não seja o cabeçalho, então vale para qualquer painel ou card
+   que venha a existir, sem lista de exceções para manter. */
+.panel.colapsado > *:not(.panel-title){display:none}
+.panel.colapsado > .panel-title{margin-bottom:0}
+.card-item.colapsado > *:not(.card-head){display:none}
+.card-item.colapsado > .card-head{margin-bottom:0}
+.card-item.colapsado .card-actions{display:flex}
+.seta{cursor:pointer;color:var(--text-mute);font-size:10px;transition:transform .15s;user-select:none;flex:0 0 auto;background:none;border:none;padding:2px 4px;line-height:1}
+.seta:hover{color:var(--gold)}
+.colapsado > .panel-title > .seta,.colapsado > .card-head > .seta{transform:rotate(-90deg)}
+.panel-title > .seta{order:-1;margin-left:-4px}
+.card-head > .seta{order:-1;margin:-2px 0 0 -4px}
+.panel-title .tudo-btn{margin-left:4px;font-size:9px;letter-spacing:.04em;color:var(--text-mute);background:none;border:1px solid var(--border);border-radius:4px;padding:2px 6px;cursor:pointer;order:-1}
+.panel-title .tudo-btn:hover{color:var(--gold);border-color:var(--border-strong)}
+.card-item.colapsado .card-name::after{content:" …";color:var(--text-mute);font-weight:400}
 .card-name{font-weight:700;color:var(--gold);font-size:13px}
 .card-actions{display:flex;gap:4px;flex:0 0 auto}
 .card-meta{display:flex;gap:6px;font-size:10px;color:var(--text-mute);margin-bottom:6px;flex-wrap:wrap}
@@ -380,7 +398,33 @@ select.id-input{cursor:pointer}
 .tab.active{color:var(--gold);border-color:var(--gold)}
 .tab-pane{display:none}
 .tab-pane.active{display:block}
-.note-area{width:100%;min-height:90px;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);resize:vertical;font-family:inherit;font-size:12px}
+.note-area{width:100%;min-height:90px;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:8px;color:var(--text);resize:vertical;font-family:inherit;font-size:12px;overflow:auto;line-height:1.5}
+.note-area:focus{outline:none;border-color:var(--border-strong)}
+.note-area:empty::before{content:attr(data-ph);color:var(--text-mute);pointer-events:none}
+.note-area img{max-width:100%;height:auto;border-radius:6px;margin:6px 0;display:block}
+.note-area h1,.note-area h2,.note-area h3,.note-area h4{color:var(--gold);font-family:'Cinzel Decorative',serif;margin:12px 0 6px}
+.note-area h2{font-size:17px} .note-area h3{font-size:14px}
+.note-area blockquote{border-left:3px solid var(--border-strong);margin:8px 0;padding:2px 0 2px 10px;color:var(--text-dim);font-style:italic}
+.note-area pre{background:var(--surface-3);border:1px solid var(--border);border-radius:6px;padding:8px;overflow-x:auto;font-family:'JetBrains Mono',monospace;font-size:11px}
+.note-area a{color:var(--uni);text-decoration:underline}
+.note-area ul,.note-area ol{padding-left:22px;margin:6px 0}
+.note-area hr{border:none;border-top:1px solid var(--border-strong);margin:12px 0}
+.note-area table{border-collapse:collapse;margin:8px 0} .note-area td,.note-area th{border:1px solid var(--border);padding:4px 7px}
+/* barra de formatação das notas */
+.note-bar{display:flex;flex-wrap:wrap;align-items:center;gap:2px;margin-bottom:8px;padding:5px 6px;background:var(--surface-2);border:1px solid var(--border);border-radius:6px}
+.nb-btn{background:none;border:1px solid transparent;border-radius:4px;color:var(--text-dim);font-size:13px;line-height:1;padding:5px 7px;cursor:pointer;min-width:28px}
+.nb-btn:hover{background:var(--surface-3);border-color:var(--border);color:var(--gold)}
+.nb-sep{width:1px;height:18px;background:var(--border);margin:0 3px}
+.nb-info{margin-left:auto;font-size:10px;color:var(--text-mute);font-family:'JetBrains Mono',monospace}
+/* prévia da importação de documento */
+.imp-linha{display:grid;grid-template-columns:18px 1fr 90px 16px 90px;gap:8px;align-items:center;padding:4px 6px;border-radius:4px;font-size:11px;cursor:pointer}
+.imp-linha:hover{background:var(--surface-3)}
+.imp-linha.muda{background:rgba(201,162,93,0.07)}
+.imp-rot{color:var(--text-dim)}
+.imp-de{font-family:'JetBrains Mono',monospace;color:var(--text-mute);text-align:right}
+.imp-seta{color:var(--text-mute);text-align:center}
+.imp-para{font-family:'JetBrains Mono',monospace;color:var(--gold);text-align:right}
+.imp-linha:not(.muda) .imp-para{color:var(--text-mute)}
 .gm-section details{background:var(--bg-2);border:1px solid var(--border-strong);border-radius:6px;padding:8px}
 .gm-section summary{cursor:pointer;color:var(--gold);font-size:12px;letter-spacing:.06em;text-transform:uppercase}
 .gm-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px dashed var(--border)}
@@ -426,6 +470,9 @@ select.id-input{cursor:pointer}
 .bloco-x:hover{opacity:1}
 .add-bloco select{background:var(--surface-3);border:1px dashed var(--border-strong);border-radius:6px;padding:7px 8px;color:var(--text-dim);width:100%}
 .dice-pct{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-dim);margin-top:6px}
+.cond-campo{display:flex;align-items:center;gap:6px;margin-top:6px}
+.cond-campo input{flex:1;min-width:0;background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:6px 8px;color:var(--text);font-family:'JetBrains Mono',monospace;font-size:11px}
+.cond-eco{font-size:10px;color:var(--text-mute);white-space:nowrap;flex:0 0 auto}
 .form-field input,.form-field textarea,.form-field select{background:var(--bg-2);border:1px solid var(--border);border-radius:6px;padding:7px 8px;color:var(--text);font-size:13px;outline:none}
 .form-field input:focus,.form-field textarea:focus,.form-field select:focus{border-color:var(--uni)}
 .form-field textarea{min-height:80px;resize:vertical;font-family:inherit}
@@ -605,6 +652,8 @@ body.leitura #btnFichas,body.leitura #btnEntrar{pointer-events:auto;opacity:1}
     <button class="btn" onclick="exportJSON()">⬇ Exportar</button>
     <button class="btn" onclick="document.getElementById('imp').click()">⬆ Importar</button>
     <input id="imp" type="file" accept="application/json" style="display:none" onchange="importJSON(event)">
+    <button class="btn" onclick="document.getElementById('impDoc').click()" title="Ler uma ficha preenchida em PDF ou DOCX e preencher os campos">📄 Importar ficha PDF/DOCX</button>
+    <input id="impDoc" type="file" accept=".pdf,.docx" style="display:none" onchange="importarDocumento(event)">
     <button class="btn btn-danger" onclick="document.getElementById('novaFichaModal').classList.add('active')">＋ Nova ficha</button>
   </div>
 </div>
@@ -743,12 +792,13 @@ body.leitura #btnFichas,body.leitura #btnEntrar{pointer-events:auto;opacity:1}
       <div class="tab" data-tab="pec">Peculiaridades</div>
       <div class="tab" data-tab="master">Mestre</div>
     </div>
-    <div class="tab-pane active" data-pane="historia"><textarea class="note-area" data-note="historia" placeholder="História completa do personagem — infância, origem, jornada, personalidade…"></textarea></div>
-    <div class="tab-pane" data-pane="player"><textarea class="note-area" data-note="player" placeholder="Anotações do jogador…"></textarea></div>
-    <div class="tab-pane" data-pane="treino"><textarea class="note-area" data-note="treino" placeholder="Habilidades em treinamento, livros em leitura, técnicas em desenvolvimento, o que falta para concluir…"></textarea></div>
-    <div class="tab-pane" data-pane="best"><textarea class="note-area" data-note="best" placeholder="Criaturas e dados desbloqueados…"></textarea></div>
-    <div class="tab-pane" data-pane="pec"><textarea class="note-area" data-note="pec" placeholder="Peculiaridades…"></textarea></div>
-    <div class="tab-pane" data-pane="master"><textarea class="note-area" data-note="master" placeholder="Anotações do mestre, bônus de origem, acordos de mesa…"></textarea></div>
+    <div class="note-bar" id="noteBar"></div>
+    <div class="tab-pane active" data-pane="historia"><div class="note-area" contenteditable="true" data-note="historia" data-ph="História completa do personagem — infância, origem, jornada, personalidade…"></div></div>
+    <div class="tab-pane" data-pane="player"><div class="note-area" contenteditable="true" data-note="player" data-ph="Anotações do jogador…"></div></div>
+    <div class="tab-pane" data-pane="treino"><div class="note-area" contenteditable="true" data-note="treino" data-ph="Habilidades em treinamento, livros em leitura, técnicas em desenvolvimento, o que falta para concluir…"></div></div>
+    <div class="tab-pane" data-pane="best"><div class="note-area" contenteditable="true" data-note="best" data-ph="Criaturas e dados desbloqueados…"></div></div>
+    <div class="tab-pane" data-pane="pec"><div class="note-area" contenteditable="true" data-note="pec" data-ph="Peculiaridades…"></div></div>
+    <div class="tab-pane" data-pane="master"><div class="note-area" contenteditable="true" data-note="master" data-ph="Anotações do mestre, bônus de origem, acordos de mesa…"></div></div>
   </div>
 </div>
 
@@ -762,6 +812,18 @@ body.leitura #btnFichas,body.leitura #btnEntrar{pointer-events:auto;opacity:1}
 </div>
 
 <button class="fab" id="fabDice" title="Rolar dados">🎲</button>
+
+<!-- Prévia de importação de PDF/DOCX: mostra o que mudaria ANTES de encostar na ficha -->
+<div class="modal-bg" id="importModal">
+  <div class="modal" style="max-width:760px">
+    <h3 id="importTitulo">Importar ficha</h3>
+    <div id="importCorpo"></div>
+    <div class="modal-actions">
+      <button class="btn-ghost" onclick="closeModal('importModal')">Cancelar</button>
+      <button class="btn-primary" id="importAplicar">Aplicar marcados</button>
+    </div>
+  </div>
+</div>
 
 <!-- Effect picker modal -->
 <div class="modal-bg" id="effectModal">
@@ -902,7 +964,7 @@ body.leitura #btnFichas,body.leitura #btnEntrar{pointer-events:auto;opacity:1}
    ========================================================================= */
 /* Anotacoes iniciais da aba Bestiario: as 3 criaturas das fotos de
    Bestiario/ cruzadas com as sessoes de "A Historia ate entao". */
-const BESTIARIO_INICIAL = "BESTIÁRIO DE ELEDIN — criaturas já encontradas em campanha\n\n═══════════════════════════════════════════\nDRÓLTSY · Monstro · Nível recomendado 07\nBaixa proliferação · Alta letalidade · Alta voracidade\n───────────────────────────────────────────\nPredador cavernício e noturno. Vive ~8 anos, adulto aos ~2. Ninhada = macho +\nfêmea + ~10 filhotes, em cavernas com mais de 50 m de profundidade.\n\nCEGO. Olfato, tato e audição extremamente refinados — localiza presa com\nprecisão mesmo sem enxergar. Odor forte e característico.\n\nATAQUES\n· Língua de até 4 m, reativa: captura quem foge e arrasta direto para a mordida.\n· Usa árvores, paredes e encostas como impulso para se lançar — esmaga ou\n  atordoa prensando o alvo contra superfície rígida. Os membros são essenciais\n  para essa propulsão.\n· Contra grupo, fixa-se em UM adversário por vez. A cauda repele aproximação\n  lateral.\n\nDEFESAS E FRAQUEZAS\n· Pele muito resistente a corte e perfuração; pouco sensível à dor.\n· FRACO a: exposição ao sol, e a impacto contundente (compromete a blindagem).\n· Bolsa-placa abdominal onde o macho guarda presas: quem chega perto dela vira\n  ameaça máxima.\n\nVARIAÇÕES\n· Linhagens de mobilidade: articulações mais expostas nos tarsos.\n· Linhagens de mordida: estrutura bucal ampliada, mandíbula parcialmente exposta.\n· Fêmea: mais armazenamento, retarda apodrecimento da carne, percepção aguçada.\n· Casal idoso caça junto até o fim — macho na ofensiva, fêmea detectando.\n\nVISTO EM: S03 (cheiro do ferido, via Gary) · S04 (na caverna, se aproximando) ·\nS05 (intercepta o grupo; Drakion quase tem ataque fulminante, Gary o salva;\na fuga joga todos na caverna de Calcarianhas).\n\n═══════════════════════════════════════════\nURNECINÁÍ · Monstro · Nível recomendado 04\nMédia proliferação · Média letalidade · Baixa voracidade\n(o recap grafa \"Urnicenais\"; acima está a grafia do bestiário)\n───────────────────────────────────────────\nHumanoide ursídeo, pelagem escura, chifres curtos, garras longas. Vive ~20 anos,\nmaduro aos ~3. Bando de ~6; ~5 filhotes por casal. Acima de duas dezenas, o\nbando se divide para colonizar território novo. Habita região superficial de\ncavernas isoladas. Após uma noite de alimentação intensa, entra em torpor\nmetabólico de quase uma semana.\n\nCAÇA PELO MEDO — este é o perigo real, não a força\n· Atormentam psicologicamente à distância e escolhem o alvo MAIS ASSUSTADO.\n· Fixam o olhar até o terror paralisar a vítima.\n· Se a presa não demonstra medo suficiente, ABANDONAM e procuram outro alvo.\n· Em desvantagem, voltam ao terror como tática: o bando concentra no inimigo\n  mais fraco para criar distração e abrir fuga ou contra-ataque.\n· Sensíveis a gritos e a sangue. Audição e olfato refinados.\n\nATAQUES\n· Lentos e devastadores: membros + mandíbulas desmembram criatura gigantesca ou\n  atordoam fera resistente. Raramente erram.\n· Gordura no auge = pesados, brutais, desequilibrados. Proteção reduzida = mais\n  ágeis, priorizam contenção em vez de ofensiva bruta.\n· Fêmea: mordida mais potente, ataca sobre os quatro membros protegendo o busto.\n  Macho: mais força explosiva, mais impulsivo e descontrolado.\n\nDEFESAS E FRAQUEZAS\n· Camada espessa de gordura blindada contra corte, perfuração, impacto e dor.\n  Consome-se rápido nas primeiras investidas — por isso preferem confronto curto\n  e decisivo. ESTICAR A LUTA É O CONTRA-JOGO.\n· FRACO: o busto da fêmea após o parto é o ponto mais vulnerável.\n· CORAÇÃO-NÚCLEO: concentra energia vital. Quando um indivíduo está à beira da\n  morte a energia se acumula nele, e os companheiros podem devorá-lo para\n  restaurar parte da própria gordura protetora. Danificar o coração antes do\n  consumo anula essa transferência.\n\nSINAL TERRITORIAL: degradam árvores e vegetação perto do ninho, para atrair\nnovos integrantes e favorecer cruzamento entre linhagens distintas.\n\n\"Meu erro foi ter olhado fundo nos olhos daquela besta, como um coelho, caí em\nsua armadilha, não tive forças nem para segurar minhas armas. Se minha equipe\nnão estivesse lá, firme, eu não estaria mais aqui, vivo.\"\n— Militar de primeira expedição\n\nVISTO EM: S01 (a missão original era destruir um ninho desses perto da Baía de\nFlumenél) · S03 (emboscada: cinco atacantes, dois fugiram no início; combate\nacirrado).\n\n═══════════════════════════════════════════\nCALCARIANHA · Monstro · Nível recomendado 02\nProliferação variável · Baixa letalidade · Alta voracidade\n───────────────────────────────────────────\nAracnídeo cavernício da linhagem calcária. Ninho imenso de teia em caverna\ncalcária isolada. Colônia de poucos indivíduos a centenas. Indivíduo comum vive\n~8 meses; a rainha chega a 20 anos. Come praticamente tudo que se move.\n\nCINCO OLHOS VERDADEIROS sensíveis ao CALOR, entre os pontos vermelhos do corpo.\nSempre ao menos um olho frontal e um traseiro funcionais. Todas são SURDAS,\nexceto a rainha.\n\nATAQUES — sequência fixa, dá para antecipar\n1. Ferrão caudal disparado com precisão. Veneno: náusea, fadiga intensa,\n   descoordenação neuromotora. O ferrão leva horas para regenerar.\n2. Perseguição lenta por paredes e tetos, disparando teia.\n3. Segundo ferrão, abdominal: veneno de torpor profundo.\n4. Casulo e transporte ao ninho principal — a presa pode ficar VIVA por semanas\n   como reserva alimentar.\n· Patas rígidas e perfurantes como lanças.\n· O ranger fino das mandíbulas convoca reforço: quanto mais a presa resiste,\n  maior a chance de virem outras.\n\nDEFESAS E FRAQUEZAS\n· Carapaça dorsal muito resistente a corte, dor e impacto; CEDE A PERFURAÇÃO\n  DIRECIONADA, principalmente num ponto mais claro que coincide com o órgão\n  dorsal regenerativo (converte matéria orgânica ingerida em regeneração; as\n  patas regeneram quase instantaneamente).\n· ARMADILHA: a região ventral (mandíbulas, tórax, abdome caudal) é reservatório\n  de veneno. Em situação crítica EXPÕEM essa área de propósito para induzir o\n  inimigo a atacá-la e entrar em contato com as toxinas. Não ataque o ventre.\n· Olhos verdadeiros são frágeis e regeneram devagar — só eles piscam.\n· FRAQUEZA PRINCIPAL: a teia é altamente inflamável. Fogo resolve.\n\nRAINHA: morta a soberana, as demais entram em colapso biológico e\ncomportamental e expelem secreções venenosas que originam a nova rainha (nem\ntodas sobrevivem; leva até dois dias). A nova rainha cria vínculo orgânico com\na colônia por toxinas.\n\n\"Se eu não soubesse de sua visão de calor, jamais sairia com vida daquelas\ndezenas de perpetuadoras da dissonância, a iluminação de Fernensei me atingiu!\"\n— Explorador pródigo\n\nVISTO EM: S03 (Gary busca antídoto de aranha de caverna) · S05 (o grupo cai no\nninho fugindo do Dróltsy; vítimas antigas na teia eram elfos transformados em\naberrações; a luta em si não é das mais complicadas).\n\n═══════════════════════════════════════════\nENCONTRADOS EM CAMPANHA, SEM PÁGINA DE BESTIÁRIO\n───────────────────────────────────────────\n· NAD'ANTH — S02. Quatro interceptam o grupo na floresta. Valerius: vivem em\n  bando de 3 a 15, agem em conjunto, moram no oceano e nunca saem dele à noite\n  (hábito diurno).\n· MANBÓIDERS — S06 em diante. Vistos em tubos de suspensão no laboratório;\n  saem e comem ração de monstro. Interceptam o grupo ao sul na S08; um desiste\n  e reza de joelhos antes de o Supervisor levá-lo.\n· ABERRAÇÕES — elfos transformados por exposição a monstros, produto do vírus\n  dissonante. S05, S06, S07. Categoria, não espécie.\n· SEMI-CHEFE — a aberração imensa em suspensão, libertada e derrotada na S06.\n\nARTE SEM LEGENDA (Bestiario/*.jpg): há duas ilustrações sem texto na pasta —\num cão de duas cabeças acorrentado, com tentáculos, e um humanoide pálido e\nesquelético de bocarra dentada e garras longas. Não dá para dizer a qual\ncriatura pertencem sem a página; ficam aqui como referência visual, não como\nidentificação.";
+const BESTIARIO_INICIAL = "BESTIÁRIO DE ELEDIN — criaturas já encontradas em campanha\n\n═══════════════════════════════════════════ DRÓLTSY · Monstro · Nível recomendado 07 Baixa proliferação · Alta letalidade · Alta voracidade\n─────────────────────────────────────────── Predador cavernício e noturno. Vive ~8 anos, adulto aos ~2. Ninhada = macho + fêmea + ~10 filhotes, em cavernas com mais de 50 m de profundidade.\n\nCEGO. Olfato, tato e audição extremamente refinados — localiza presa com precisão mesmo sem enxergar. Odor forte e característico.\n\nATAQUES\n· Língua de até 4 m, reativa: captura quem foge e arrasta direto para a mordida.\n· Usa árvores, paredes e encostas como impulso para se lançar — esmaga ou atordoa prensando o alvo contra superfície rígida. Os membros são essenciais para essa propulsão.\n· Contra grupo, fixa-se em UM adversário por vez. A cauda repele aproximação lateral.\n\nDEFESAS E FRAQUEZAS\n· Pele muito resistente a corte e perfuração; pouco sensível à dor.\n· FRACO a: exposição ao sol, e a impacto contundente (compromete a blindagem).\n· Bolsa-placa abdominal onde o macho guarda presas: quem chega perto dela vira ameaça máxima.\n\nVARIAÇÕES\n· Linhagens de mobilidade: articulações mais expostas nos tarsos.\n· Linhagens de mordida: estrutura bucal ampliada, mandíbula parcialmente exposta.\n· Fêmea: mais armazenamento, retarda apodrecimento da carne, percepção aguçada.\n· Casal idoso caça junto até o fim — macho na ofensiva, fêmea detectando.\n\nVISTO EM: S03 (cheiro do ferido, via Gary) · S04 (na caverna, se aproximando) · S05 (intercepta o grupo; Drakion quase tem ataque fulminante, Gary o salva; a fuga joga todos na caverna de Calcarianhas).\n\n═══════════════════════════════════════════ URNECINÁÍ · Monstro · Nível recomendado 04 Média proliferação · Média letalidade · Baixa voracidade (o recap grafa \"Urnicenais\"; acima está a grafia do bestiário)\n─────────────────────────────────────────── Humanoide ursídeo, pelagem escura, chifres curtos, garras longas. Vive ~20 anos, maduro aos ~3. Bando de ~6; ~5 filhotes por casal. Acima de duas dezenas, o bando se divide para colonizar território novo. Habita região superficial de cavernas isoladas. Após uma noite de alimentação intensa, entra em torpor metabólico de quase uma semana.\n\nCAÇA PELO MEDO — este é o perigo real, não a força\n· Atormentam psicologicamente à distância e escolhem o alvo MAIS ASSUSTADO.\n· Fixam o olhar até o terror paralisar a vítima.\n· Se a presa não demonstra medo suficiente, ABANDONAM e procuram outro alvo.\n· Em desvantagem, voltam ao terror como tática: o bando concentra no inimigo mais fraco para criar distração e abrir fuga ou contra-ataque.\n· Sensíveis a gritos e a sangue. Audição e olfato refinados.\n\nATAQUES\n· Lentos e devastadores: membros + mandíbulas desmembram criatura gigantesca ou atordoam fera resistente. Raramente erram.\n· Gordura no auge = pesados, brutais, desequilibrados. Proteção reduzida = mais ágeis, priorizam contenção em vez de ofensiva bruta.\n· Fêmea: mordida mais potente, ataca sobre os quatro membros protegendo o busto.\n  Macho: mais força explosiva, mais impulsivo e descontrolado.\n\nDEFESAS E FRAQUEZAS\n· Camada espessa de gordura blindada contra corte, perfuração, impacto e dor.\n  Consome-se rápido nas primeiras investidas — por isso preferem confronto curto e decisivo. ESTICAR A LUTA É O CONTRA-JOGO.\n· FRACO: o busto da fêmea após o parto é o ponto mais vulnerável.\n· CORAÇÃO-NÚCLEO: concentra energia vital. Quando um indivíduo está à beira da morte a energia se acumula nele, e os companheiros podem devorá-lo para restaurar parte da própria gordura protetora. Danificar o coração antes do consumo anula essa transferência.\n\nSINAL TERRITORIAL: degradam árvores e vegetação perto do ninho, para atrair novos integrantes e favorecer cruzamento entre linhagens distintas.\n\n\"Meu erro foi ter olhado fundo nos olhos daquela besta, como um coelho, caí em sua armadilha, não tive forças nem para segurar minhas armas. Se minha equipe não estivesse lá, firme, eu não estaria mais aqui, vivo.\"\n— Militar de primeira expedição\n\nVISTO EM: S01 (a missão original era destruir um ninho desses perto da Baía de Flumenél) · S03 (emboscada: cinco atacantes, dois fugiram no início; combate acirrado).\n\n═══════════════════════════════════════════ CALCARIANHA · Monstro · Nível recomendado 02 Proliferação variável · Baixa letalidade · Alta voracidade\n─────────────────────────────────────────── Aracnídeo cavernício da linhagem calcária. Ninho imenso de teia em caverna calcária isolada. Colônia de poucos indivíduos a centenas. Indivíduo comum vive ~8 meses; a rainha chega a 20 anos. Come praticamente tudo que se move.\n\nCINCO OLHOS VERDADEIROS sensíveis ao CALOR, entre os pontos vermelhos do corpo.\nSempre ao menos um olho frontal e um traseiro funcionais. Todas são SURDAS, exceto a rainha.\n\nATAQUES — sequência fixa, dá para antecipar\n1. Ferrão caudal disparado com precisão. Veneno: náusea, fadiga intensa, descoordenação neuromotora. O ferrão leva horas para regenerar.\n2. Perseguição lenta por paredes e tetos, disparando teia.\n3. Segundo ferrão, abdominal: veneno de torpor profundo.\n4. Casulo e transporte ao ninho principal — a presa pode ficar VIVA por semanas como reserva alimentar.\n· Patas rígidas e perfurantes como lanças.\n· O ranger fino das mandíbulas convoca reforço: quanto mais a presa resiste, maior a chance de virem outras.\n\nDEFESAS E FRAQUEZAS\n· Carapaça dorsal muito resistente a corte, dor e impacto; CEDE A PERFURAÇÃO DIRECIONADA, principalmente num ponto mais claro que coincide com o órgão dorsal regenerativo (converte matéria orgânica ingerida em regeneração; as patas regeneram quase instantaneamente).\n· ARMADILHA: a região ventral (mandíbulas, tórax, abdome caudal) é reservatório de veneno. Em situação crítica EXPÕEM essa área de propósito para induzir o inimigo a atacá-la e entrar em contato com as toxinas. Não ataque o ventre.\n· Olhos verdadeiros são frágeis e regeneram devagar — só eles piscam.\n· FRAQUEZA PRINCIPAL: a teia é altamente inflamável. Fogo resolve.\n\nRAINHA: morta a soberana, as demais entram em colapso biológico e comportamental e expelem secreções venenosas que originam a nova rainha (nem todas sobrevivem; leva até dois dias). A nova rainha cria vínculo orgânico com a colônia por toxinas.\n\n\"Se eu não soubesse de sua visão de calor, jamais sairia com vida daquelas dezenas de perpetuadoras da dissonância, a iluminação de Fernensei me atingiu!\"\n— Explorador pródigo\n\nVISTO EM: S03 (Gary busca antídoto de aranha de caverna) · S05 (o grupo cai no ninho fugindo do Dróltsy; vítimas antigas na teia eram elfos transformados em aberrações; a luta em si não é das mais complicadas).\n\n═══════════════════════════════════════════ ENCONTRADOS EM CAMPANHA, SEM PÁGINA DE BESTIÁRIO\n───────────────────────────────────────────\n· NAD'ANTH — S02. Quatro interceptam o grupo na floresta. Valerius: vivem em bando de 3 a 15, agem em conjunto, moram no oceano e nunca saem dele à noite (hábito diurno).\n· MANBÓIDERS — S06 em diante. Vistos em tubos de suspensão no laboratório; saem e comem ração de monstro. Interceptam o grupo ao sul na S08; um desiste e reza de joelhos antes de o Supervisor levá-lo.\n· ABERRAÇÕES — elfos transformados por exposição a monstros, produto do vírus dissonante. S05, S06, S07. Categoria, não espécie.\n· SEMI-CHEFE — a aberração imensa em suspensão, libertada e derrotada na S06.\n\nARTE SEM LEGENDA (Bestiario/*.jpg): há duas ilustrações sem texto na pasta — um cão de duas cabeças acorrentado, com tentáculos, e um humanoide pálido e esquelético de bocarra dentada e garras longas. Não dá para dizer a qual criatura pertencem sem a página; ficam aqui como referência visual, não como identificação.";
 const DEFAULT_STATE = {
   /* Ficha vazia. Atributos, perícias e ramos são a estrutura fixa do sistema —
      tudo o mais nasce em branco e é preenchido pelo jogador. */
@@ -989,6 +1051,9 @@ const DEFAULT_STATE = {
   mecAtivas:{}, mecStacks:{}, usos:{},
   cr:{ ativa:false, valor:0, desastreExtra:0 },
   notas:{ historia:"", player:"", master:"", best:BESTIARIO_INICIAL, pec:"", treino:"" },
+  // Layout de trabalho: o que o jogador deixou recolhido. Objeto, então deepMerge preserva
+  // o que já está salvo e quem tem ficha antiga só ganha o mapa vazio — sem migração.
+  ui:{ colapso:{} },
   avatarUrl:"",
   avatars:[{url:"",label:"Padrão"}],
   avatarIdx:0,
@@ -1278,35 +1343,35 @@ const EFFECTS_DB = [
    desc:'D4 de dano por rodada. A cada 3 aplicações de efeitos imunológicos (Sangramento, Choque, Envenenamento…) o causador rola D2 e, com êxito, o efeito ganha +1 de dano. Com o alvo abaixo da metade da vida, aplica Dor permanente.'},
   {id:'envenenamento',name:'Envenenamento',icon:'☠',color:'#52a85a',aplicaAoEntrar:true,
    desc:'Dano aplicado ao receber e em todos os turnos, dobrando a cada rodada, por rodadas ilimitadas. Consome aleatoriamente estâmina e sanidade. Efeito único.'},
-  {id:'dilaceracao',name:'Dilaceração',icon:'🩹',color:'#c77',maiorSobrepoe:true,
+  {id:'dilaceracao',name:'Dilaceração',icon:'🩹',color:'#c77',maiorSobrepoe:true,modsPorAcc:[{target:'cura',value:-1}],
    desc:'Toda cura recebida é reduzida em pontos fixos enquanto as rodadas não passarem. O maior efeito sobrepõe.'},
-  {id:'desequilibrio',name:'Desequilíbrio',icon:'🌀',color:'#7aa6e0',maiorSobrepoe:true,
+  {id:'desequilibrio',name:'Desequilíbrio',icon:'🌀',color:'#7aa6e0',maiorSobrepoe:true,modsPorAcc:[{target:'vdado',sub:'Equilíbrio',value:-1}],
    desc:'Pontos de desvantagem em Equilíbrio enquanto durar. Pode ser removido se um aliado der a mão, abdicando de movimento equivalente às rodadas. O maior efeito sobrepõe.'},
-  {id:'ruptura',name:'Ruptura',icon:'💔',color:'#d4555f',maiorSobrepoe:true,
+  {id:'ruptura',name:'Ruptura',icon:'💔',color:'#d4555f',maiorSobrepoe:true,modsPorAcc:[{target:'vdado',sub:'Defesa',value:-1}],
    desc:'Desvantagem em Reações Especiais. Dados de desastre em Reações Especiais não podem ser salvos por sorte, vantagens ou re-rolagens. O maior efeito sobrepõe.'},
-  {id:'faisca',name:'Faísca',icon:'⚡',color:'#e6c44a',desc:'Dano à barra elétrica de inimigos elétricos/robóticos. Acumulativo.',accumulate:true},
-  {id:'dor',name:'Dor',icon:'⚠',color:'#e08a3f',desc:'Reduz o dano do próximo ataque do alvo (-1 por classe). Acumulativo.',accumulate:true},
-  {id:'choque',name:'Choque',icon:'🌩',color:'#e6c44a',desc:'Desvantagem na próxima ação; acúmulos levam à desconcentração. Acumulativo.',accumulate:true},
-  {id:'fraqueza',name:'Fraqueza',icon:'🦴',color:'#b9a',desc:'Consome 2 Dor: +10% dano recebido e -½ dano físico. Acumulativo.',accumulate:true},
-  {id:'desgaste',name:'Desgaste',icon:'🔧',color:'#8a8',desc:'+1 custo de estâmina por acúmulo (só com resistência zerada). Acumulativo.',accumulate:true},
-  {id:'desfoque',name:'Desfoque',icon:'😵',color:'#9a8fd0',desc:'Remove concentração e +1 custo de mana. Acumulativo.',accumulate:true},
-  {id:'quebra_armadura',name:'Quebra de Armadura',icon:'🛡',color:'#7a8a9c',desc:'-1 da maior resistência enquanto residir no alvo.'},
-  {id:'retencao',name:'Retenção',icon:'🔗',color:'#caa',desc:'-1 mobilidade da próxima ação de movimento por acúmulo. Acumulativo.',accumulate:true},
-  {id:'lentidao',name:'Lentidão',icon:'🐌',color:'#7a8a9c',desc:'-10% mobilidade por acúmulo (máx 8). Constante.',accumulate:true},
-  {id:'dissonancia',name:'Dissonância',icon:'〰',color:'#a06fe0',desc:'Disfunção mística de monstros vorazes; grau variável. Acumulativo.',accumulate:true},
-  {id:'impacto',name:'Impacto',icon:'💢',color:'#e2403f',desc:'Remove resistência imediatamente (quebra de resistência). Grau.'},
-  {id:'fatiamento',name:'Fatiamento',icon:'🔪',color:'#d99',desc:'+1 ao maior dano passivo recebido (mais suscetível).'},
-  {id:'pavor',name:'Pavor',icon:'😱',color:'#a06fe0',desc:'Por grau: -1 sanidade extra e desvantagem (dobrada em Determinação). Acumulativo.',accumulate:true},
-  {id:'desconcentracao',name:'Desconcentração',icon:'🌫',color:'#6a6f7c',desc:'Não pode rolar dados mentais (mana zerada / desgaste extremo).'},
-  {id:'sono',name:'Sono',icon:'💤',color:'#3f6da8',desc:'-1 em todas as ações por acúmulo (máx 16); desmaia no máximo. Acumulativo.',accumulate:true},
-  {id:'insanidade',name:'Insanidade',icon:'🌑',color:'#8a4fb0',desc:'Sanidade zerada; comportamentos insanos, controle do Mestre.'},
-  {id:'desorientado',name:'Desorientado',icon:'🧭',color:'#7aa6e0',desc:'Senso de direção comprometido; segue o local errado.'},
+  {id:'faisca',name:'Faísca',icon:'⚡',color:'#e6c44a',mods:[{target:'nota',value:1}],desc:'Dano à barra elétrica de inimigos elétricos/robóticos. Acumulativo.',accumulate:true},
+  {id:'dor',name:'Dor',icon:'⚠',color:'#e08a3f',modsPorAcc:[{target:'dano',value:-1}],desc:'Reduz o dano do próximo ataque do alvo (-1 por classe). Acumulativo.',accumulate:true},
+  {id:'choque',name:'Choque',icon:'🌩',color:'#e6c44a',modsPorAcc:[{target:'vdado',value:-1}],desc:'Desvantagem na próxima ação; acúmulos levam à desconcentração. Acumulativo.',accumulate:true},
+  {id:'fraqueza',name:'Fraqueza',icon:'🦴',color:'#b9a',mods:[{target:'multdano',value:-50},{target:'multrecebido',value:10}],desc:'Consome 2 Dor: +10% dano recebido e -½ dano físico. Acumulativo.',accumulate:true},
+  {id:'desgaste',name:'Desgaste',icon:'🔧',color:'#8a8',modsPorAcc:[{target:'custo',sub:'estamina',value:1}],desc:'+1 custo de estâmina por acúmulo (só com resistência zerada). Acumulativo.',accumulate:true},
+  {id:'desfoque',name:'Desfoque',icon:'😵',color:'#9a8fd0',modsPorAcc:[{target:'custo',sub:'mana',value:1}],desc:'Remove concentração e +1 custo de mana. Acumulativo.',accumulate:true},
+  {id:'quebra_armadura',name:'Quebra de Armadura',icon:'🛡',color:'#7a8a9c',mods:[{target:'resist',value:-1}],desc:'-1 da maior resistência enquanto residir no alvo.'},
+  {id:'retencao',name:'Retenção',icon:'🔗',color:'#caa',modsPorAcc:[{target:'mobilidade',value:-1}],desc:'-1 mobilidade da próxima ação de movimento por acúmulo. Acumulativo.',accumulate:true},
+  {id:'lentidao',name:'Lentidão',icon:'🐌',color:'#7a8a9c',modsPorAcc:[{target:'mobpct',value:-10}],desc:'-10% mobilidade por acúmulo (máx 8). Constante.',accumulate:true},
+  {id:'dissonancia',name:'Dissonância',icon:'〰',color:'#a06fe0',mods:[{target:'nota',value:1}],desc:'Disfunção mística de monstros vorazes; grau variável. Acumulativo.',accumulate:true},
+  {id:'impacto',name:'Impacto',icon:'💢',color:'#e2403f',modsPorAcc:[{target:'resist',value:-1}],desc:'Remove resistência imediatamente (quebra de resistência). Grau.'},
+  {id:'fatiamento',name:'Fatiamento',icon:'🔪',color:'#d99',mods:[{target:'nota',value:1}],desc:'+1 ao maior dano passivo recebido (mais suscetível).'},
+  {id:'pavor',name:'Pavor',icon:'😱',color:'#a06fe0',modsPorAcc:[{target:'vdado',value:-1},{target:'vdado',sub:'Determinação',value:-1}],desc:'Por grau: -1 sanidade extra e desvantagem (dobrada em Determinação). Acumulativo.',accumulate:true},
+  {id:'desconcentracao',name:'Desconcentração',icon:'🌫',color:'#6a6f7c',mods:[{target:'bloqueio',sub:'mental',value:1}],desc:'Não pode rolar dados mentais (mana zerada / desgaste extremo).'},
+  {id:'sono',name:'Sono',icon:'💤',color:'#3f6da8',modsPorAcc:[{target:'vdado',value:-1}],desc:'-1 em todas as ações por acúmulo (máx 16); desmaia no máximo. Acumulativo.',accumulate:true},
+  {id:'insanidade',name:'Insanidade',icon:'🌑',color:'#8a4fb0',mods:[{target:'nota',value:1}],desc:'Sanidade zerada; comportamentos insanos, controle do Mestre.'},
+  {id:'desorientado',name:'Desorientado',icon:'🧭',color:'#7aa6e0',mods:[{target:'nota',value:1}],desc:'Senso de direção comprometido; segue o local errado.'},
   {id:'deterioracao',name:'Deterioração',icon:'🥀',color:'#a77',desc:'-1 vida máxima por grau (temporário, não restaura vitalidade). Acumulativo.',accumulate:true,modsPorAcc:[{target:'max',sub:'hp',value:-1}]},
-  {id:'sobrecarga',name:'Sobrecarga',icon:'🪨',color:'#e08a3f',desc:'Sobrepeso: a cada 3 kg, -1 dado físico e -1 mobilidade; >9 kg → exaustão.'},
-  {id:'exaustao',name:'Exaustão',icon:'😩',color:'#888',desc:'Estâmina zerada: -6 dados físicos, -3 mentais; pode desmaiar.'},
-  {id:'cegueira',name:'Cegueira',icon:'🌚',color:'#555',desc:'-5 m de pontaria e desvantagem visual (dobrada à distância) por acúmulo. Acumulativo.',accumulate:true},
+  {id:'sobrecarga',name:'Sobrecarga',icon:'🪨',color:'#e08a3f',modsPorAcc:[{target:'dfis',value:-1},{target:'mobilidade',value:-1}],desc:'Sobrepeso: a cada 3 kg, -1 dado físico e -1 mobilidade; >9 kg → exaustão.'},
+  {id:'exaustao',name:'Exaustão',icon:'😩',color:'#888',mods:[{target:'dfis',value:-6},{target:'dment',value:-3}],desc:'Estâmina zerada: -6 dados físicos, -3 mentais; pode desmaiar.'},
+  {id:'cegueira',name:'Cegueira',icon:'🌚',color:'#555',modsPorAcc:[{target:'alcance',value:-5},{target:'vdado',value:-1}],desc:'-5 m de pontaria e desvantagem visual (dobrada à distância) por acúmulo. Acumulativo.',accumulate:true},
   {id:'regeneracao',name:'Regeneração',icon:'✚',color:'#52c878',desc:'Recupera Vida por rodada enquanto durar (cura positiva).'},
-  {id:'pisardor',name:'Fortalecido',icon:'⛨',color:'#52c878',desc:'+2 em testes físicos (efeito positivo de exemplo).'}
+
 ];
 const HEAL_IDS = {regeneracao:'hp'};
 
@@ -1491,12 +1556,45 @@ const INFO_SCALE = {
 const MOD_TARGETS = [
   {v:'dano', l:'Dano Físico'}, {v:'resist', l:'Resistência'},
   {v:'desvio', l:'Desvio (esquiva)'},
-  {v:'multdano', l:'Multiplicador de dano (%)'},
-  {v:'vdado', l:'Dado de vantagem em perícia (− = desvantagem)', sub:'skill'},
+  {v:'multdano', l:'Multiplicador de dano causado (%)'},
+  {v:'multrecebido', l:'Multiplicador de dano recebido (%)'},
+  {v:'vdado', l:'Dado de vantagem em perícia (− = desvantagem) — sem perícia = TODAS', sub:'skill'},
+  // ponytail: alvos novos exigidos pelos efeitos do livro, que o vocabulário antigo não
+  // conseguia expressar. Sem eles, 24 dos 30 efeitos do sistema não faziam nada.
+  {v:'dfis', l:'Dados físicos (− = desvantagem)'},
+  {v:'dment', l:'Dados mentais (− = desvantagem)'},
+  {v:'cura', l:'Cura recebida'},
+  {v:'custo', l:'Custo adicional de uso', sub:'custo'},
+  {v:'mobpct', l:'Mobilidade (%)'},
+  {v:'bloqueio', l:'Bloqueia rolagem', sub:'bloqueio'},
   {v:'mobilidade', l:'Mobilidade'}, {v:'alcance', l:'Alcance'}, {v:'carga', l:'Carregamento'},
   {v:'attr', l:'Atributo (grupo)', sub:'attr'}, {v:'skill', l:'Perícia', sub:'skill'},
   {v:'max', l:'Status (máximo)', sub:'status'}, {v:'nota', l:'Apenas lembrete (sem número)'}
 ];
+const SUB_CUSTO = [['estamina','Estâmina'],['mana','Mana']];
+const SUB_BLOQUEIO = [['fisico','Dados físicos'],['mental','Dados mentais']];
+
+/* ---- Dados físicos × mentais ------------------------------------------------------------
+   O livro usa os dois termos (Exaustão, Sobrecarga, Desconcentração) e NUNCA lista quais
+   perícias entram em cada lado — procurei em todas as 2115 linhas. Isto é um PADRÃO editável,
+   não regra lida: cada grupo de atributo tem um tipo, e o jogador troca na aba de Atributos.
+   A dedução veio de qual atributo escala cada desgaste: Estâmina é esforço físico, Mana é
+   desgaste mental/cognitivo. Carisma fica neutro, porque o livro não dá base para nenhum lado. */
+const TIPO_GRUPO_PADRAO = {
+  'Destreza e Celeridade':'fisico', 'Físico e Força':'fisico',
+  'Vitalidade e Constituição':'fisico', 'Precisão e Pontaria':'fisico',
+  'Mente e Sabedoria':'mental', 'Conhecimento e Cognição':'mental',
+  'Carisma e Influência':''
+};
+const TIPOS_GRUPO = [['','Neutro'],['fisico','Físico'],['mental','Mental']];
+function tipoGrupo(nome){
+  const g=(state.atributos||[]).find(x=>x.nome===nome);
+  return (g && g.tipo!==undefined) ? g.tipo : (TIPO_GRUPO_PADRAO[nome]||'');
+}
+function grupoDaPericia(pericia){
+  const g=(state.atributos||[]).find(x=>(x.pericias||[]).some(y=>y.n===pericia));
+  return g?g.nome:'';
+}
 
 /* =========================================================================
    PERSISTÊNCIA
@@ -1898,6 +1996,211 @@ function forceSave(){
 // fechar a aba não pode perder os 150ms de espera do autosave
 addEventListener('beforeunload', ()=>{ try{ clearTimeout(saveTimer); gravar(); }catch(e){} });
 addEventListener('visibilitychange', ()=>{ if(document.hidden){ try{ clearTimeout(saveTimer); gravar(); }catch(e){} } });
+/* =========================================================================
+   IMPORTAR FICHA DE PDF / DOCX
+   Sem biblioteca nenhuma: DOCX é um ZIP e os streams de PDF são deflate, e o
+   navegador já sabe inflar os dois com DecompressionStream. Mantém a regra da
+   casa de não ter build nem dependência externa.
+
+   TETO CONHECIDO: só lê PDF com camada de TEXTO. PDF que é foto de papel
+   escaneado não tem texto para extrair, e o importador diz isso em vez de
+   devolver campos vazios fingindo que leu.
+   ========================================================================= */
+async function inflar(bytes, formato){
+  try{
+    const ds=new DecompressionStream(formato);
+    const buf=await new Response(new Blob([bytes]).stream().pipeThrough(ds)).arrayBuffer();
+    return new Uint8Array(buf);
+  }catch(e){ return null; }
+}
+/* Lê um ZIP pelo diretório central (o único jeito confiável: o header local
+   pode ter tamanho zerado quando o arquivo foi escrito em streaming). */
+async function lerZip(bytes, queroNome){
+  const dv=new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let eocd=-1;
+  for(let i=bytes.length-22; i>=0 && i>bytes.length-66000; i--){
+    if(dv.getUint32(i,true)===0x06054b50){ eocd=i; break; }
+  }
+  if(eocd<0) return null;
+  let p=dv.getUint32(eocd+16,true);
+  const n=dv.getUint16(eocd+10,true);
+  for(let k=0;k<n;k++){
+    if(dv.getUint32(p,true)!==0x02014b50) return null;
+    const metodo=dv.getUint16(p+10,true), compSize=dv.getUint32(p+20,true);
+    const nomeLen=dv.getUint16(p+28,true), extraLen=dv.getUint16(p+30,true), comLen=dv.getUint16(p+32,true);
+    const offLocal=dv.getUint32(p+42,true);
+    const nome=new TextDecoder().decode(bytes.subarray(p+46,p+46+nomeLen));
+    if(nome===queroNome){
+      const nl=dv.getUint16(offLocal+26,true), el2=dv.getUint16(offLocal+28,true);
+      const ini=offLocal+30+nl+el2;
+      const dados=bytes.subarray(ini, ini+compSize);
+      return metodo===0 ? dados : await inflar(dados,'deflate-raw');
+    }
+    p+=46+nomeLen+extraLen+comLen;
+  }
+  return null;
+}
+async function textoDeDocx(bytes){
+  const xml=await lerZip(bytes,'word/document.xml');
+  if(!xml) return '';
+  const s=new TextDecoder().decode(xml);
+  // <w:tab/> e fim de parágrafo viram separador; o resto é texto de <w:t>
+  return s.replace(/<w:tab[^>]*\/>/g,'\t')
+          .replace(/<\/w:p>/g,'\n')
+          .replace(/<w:br[^>]*\/>/g,'\n')
+          .replace(/<[^>]+>/g,'')
+          .replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&')
+          .replace(/&quot;/g,'"').replace(/&apos;/g,"'");
+}
+function textoDeStreamPdf(s){
+  // operadores de texto: (texto)Tj  e  [(a)-250(b)]TJ
+  let saida='';
+  const desescapa=t=>t.replace(/\\([nrtbf()\\])/g,(m,c)=>({n:'\n',r:'\n',t:'\t',b:'',f:''}[c]!==undefined?{n:'\n',r:'\n',t:'\t',b:'',f:''}[c]:c))
+                      .replace(/\\([0-7]{1,3})/g,(m,o)=>String.fromCharCode(parseInt(o,8)));
+  for(const m of s.matchAll(/\[((?:[^\][\\]|\\.)*)\]\s*TJ|\(((?:[^()\\]|\\.)*)\)\s*Tj|\bT[*]|\bTd\b|\bTD\b|\bET\b/g)){
+    if(m[1]!==undefined){ for(const t of m[1].matchAll(/\(((?:[^()\\]|\\.)*)\)/g)) saida+=desescapa(t[1]); saida+=' '; }
+    else if(m[2]!==undefined){ saida+=desescapa(m[2])+' '; }
+    else saida+='\n';
+  }
+  return saida;
+}
+async function textoDePdf(bytes){
+  const cru=new TextDecoder('latin1').decode(bytes);
+  let texto='';
+  const re=/stream\r?\n/g; let m;
+  while((m=re.exec(cru))){
+    const ini=m.index+m[0].length;
+    const fim=cru.indexOf('endstream',ini);
+    if(fim<0) continue;
+    const bruto=bytes.subarray(ini,fim);
+    let conteudo=null;
+    for(const fmt of ['deflate','deflate-raw']){ conteudo=await inflar(bruto,fmt); if(conteudo) break; }
+    const s = conteudo ? new TextDecoder('latin1').decode(conteudo) : cru.slice(ini,fim);
+    if(/\bTj\b|\bTJ\b/.test(s)) texto+=textoDeStreamPdf(s)+'\n';
+  }
+  return texto;
+}
+
+/* ---- Mapear o texto extraído nos campos da ficha ---------------------------------------
+   Casa pelo NOME do campo seguido de número, usando o vocabulário da própria ficha
+   (status, 7 grupos de atributo, ~50 perícias). Devolve propostas, nunca aplica direto:
+   preencher ficha errado em cima de dado bom é pior que não importar. */
+function normaliza(s){ return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').trim(); }
+function mapearFicha(texto){
+  const linhas=texto.split(/\n+/).map(l=>l.replace(/\s+/g,' ').trim()).filter(Boolean);
+  const achados=[], faltando=[];
+  const plano=linhas.join(' \n ');
+
+  // \b nas duas pontas é obrigatório: sem isso "Mana" casa dentro de "Humana" (da linha
+  // "Raça: Humana") e captura o 1 de "1,68 m" da linha seguinte. O limite de 12 caracteres
+  // sem dígito entre o rótulo e o número impede pegar o número de outro campo.
+  const plano_n=normaliza(plano);
+  const pegaNum=(rotulos)=>{
+    for(const rot of rotulos){
+      const alvo=normaliza(rot).replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      const m=plano_n.match(new RegExp('\\b'+alvo+'\\b[^0-9\\-]{0,12}(-?\\d{1,3})','i'));
+      if(m) return parseInt(m[1]);
+    }
+    return null;
+  };
+  const add=(rot,caminho,valor,atual)=>{ if(valor!=null) achados.push({rot,caminho,valor,atual}); else faltando.push(rot); };
+
+  // texto livre da identidade
+  for(const [rot,chave] of [['Jogador','jogador'],['Nome','nome'],['Idade','idade'],['Raça','raca'],['Altura','altura'],['Massa','massa']]){
+    const re=new RegExp(rot.replace(/[.*+?^${}()|[\]\\]/g,'\\$&')+'\\s*[:\\-]?\\s*([^\\n|]{1,40})','i');
+    const m=texto.match(re);
+    const v=m?m[1].trim():null;
+    if(v && !/^\d*$/.test(v)) add(rot,'basicos.'+chave,v,state.basicos[chave]); else faltando.push(rot);
+  }
+  // Status: numa ficha de papel "Vida: 55" é o MÁXIMO. Aqui o máximo é derivado
+  // (autoScale pelos atributos + bonus), então o que se importa é o BÔNUS que faz a
+  // conta fechar em 55 — e a prévia mostra máximo→máximo, não o valor atual, senão o
+  // número exibido não seria o que vai acontecer.
+  for(const k of Object.keys(state.status)){
+    const nome=(STATUS_META[k]||{}).name||k;
+    const alvo=pegaNum([nome]);
+    if(alvo==null){ faltando.push(nome); continue; }
+    // Não dá para calcular o bônus agora: autoScale depende dos atributos, que esta mesma
+    // importação pode mudar. Guarda o ALVO e resolve na hora de aplicar, depois do resto.
+    achados.push({rot:nome+' (máx.)', statusKey:k, alvoMax:alvo, atual:statusMax(k), mostra:alvo});
+  }
+  // grupos de atributo e perícias
+  state.atributos.forEach((g,gi)=>{
+    const v=pegaNum([g.nome]);
+    add(g.nome+' (mod.)',`atributos.${gi}.mod`,v,g.mod);
+    g.pericias.forEach((p,pi)=>{
+      const vp=pegaNum([p.n]);
+      add('· '+p.n,`atributos.${gi}.pericias.${pi}.m`,vp,p.m);
+    });
+  });
+  // nível
+  const nv=pegaNum(['Nível de Experiência','Nivel','Nível']);
+  add('Nível','basicos.nivel',nv,state.basicos.nivel);
+
+  return { achados, faltando, linhas:linhas.length, caracteres:texto.length };
+}
+function aplicaCaminho(caminho, valor){
+  const partes=caminho.split('.'); let o=state;
+  for(let i=0;i<partes.length-1;i++) o=o[partes[i]];
+  const ult=partes[partes.length-1];
+  o[ult] = (typeof o[ult]==='number') ? num(valor) : valor;
+}
+
+async function importarDocumento(ev){
+  const f=ev.target.files[0]; if(!f) return;
+  ev.target.value='';
+  toast('Lendo '+f.name+'…','info');
+  try{
+    const bytes=new Uint8Array(await f.arrayBuffer());
+    const ehDocx=/\.docx$/i.test(f.name);
+    const texto=ehDocx? await textoDeDocx(bytes) : await textoDePdf(bytes);
+    if(!texto || texto.replace(/\s/g,'').length<40){
+      toast(ehDocx? 'Não achei texto nesse DOCX.'
+                  : 'Esse PDF não tem camada de texto (provavelmente é digitalizado). Exporte como DOCX ou um PDF de texto.','falha');
+      return;
+    }
+    abrirPreviaImport(mapearFicha(texto), f.name);
+  }catch(e){ toast('Falha ao ler o arquivo: '+e.message,'falha'); }
+}
+
+function abrirPreviaImport(res, nomeArq){
+  const m=document.getElementById('importModal');
+  document.getElementById('importTitulo').textContent='Importar de '+nomeArq;
+  const corpo=document.getElementById('importCorpo'); corpo.innerHTML='';
+  const mudam=res.achados.filter(a=>String(a.valor)!==String(a.atual));
+  corpo.appendChild(el(`<div class="muted" style="margin-bottom:8px">Li ${res.caracteres} caracteres em ${res.linhas} linhas. Encontrei <b>${res.achados.length}</b> campo(s); <b>${mudam.length}</b> mudariam o que está na ficha hoje. Nada é aplicado sem você marcar.</div>`));
+  if(!res.achados.length) corpo.appendChild(el('<div class="muted">Nenhum campo reconhecido. O documento pode usar outros rótulos.</div>'));
+  res.achados.forEach((a,i)=>{
+    // `mostra` existe quando o valor gravado difere do que o usuário vê (status: grava o
+    // bônus, exibe o máximo resultante). Sem ele, gravado e exibido são o mesmo.
+    const exibe = (a.mostra!==undefined) ? a.mostra : a.valor;
+    const muda=String(exibe)!==String(a.atual);
+    const linha=el(`<label class="imp-linha${muda?' muda':''}">
+      <input type="checkbox" ${muda?'checked':''} data-i="${i}">
+      <span class="imp-rot">${esc(a.rot)}</span>
+      <span class="imp-de">${esc(String(a.atual??'—'))}</span>
+      <span class="imp-seta">→</span>
+      <span class="imp-para">${esc(String(exibe))}</span></label>`);
+    corpo.appendChild(linha);
+  });
+  if(res.faltando.length) corpo.appendChild(el(`<details style="margin-top:10px"><summary class="muted">${res.faltando.length} campo(s) não encontrados no documento</summary><div class="muted" style="font-size:11px;margin-top:6px">${esc(res.faltando.join(' · '))}</div></details>`));
+  document.getElementById('importAplicar').onclick=()=>{
+    const marcados=[...corpo.querySelectorAll('input[type=checkbox]:checked')].map(c=>res.achados[+c.dataset.i]);
+    // Atributos e perícias primeiro: o máximo de status é derivado deles (autoScale), então
+    // calcular o bônus antes daria um máximo diferente do que a prévia prometeu.
+    marcados.filter(a=>!a.statusKey).forEach(a=>aplicaCaminho(a.caminho, a.valor));
+    marcados.filter(a=>a.statusKey).forEach(a=>{
+      const s=state.status[a.statusKey];
+      s.bonus = a.alvoMax - autoScale(STATUS_SCALE[a.statusKey]);
+      if(s.cur > statusMax(a.statusKey)) s.cur = statusMax(a.statusKey);   // não deixa o atual passar do novo teto
+    });
+    save(); renderAll(); recompute(); closeModal('importModal');
+    toast(marcados.length?`${marcados.length} campo(s) importado(s)`:'Nada marcado — nada mudou',
+          marcados.length?'sucesso':'info');
+  };
+  m.classList.add('active');
+}
+
 function exportJSON(){
   const blob=new Blob([JSON.stringify(state,null,2)],{type:"application/json"});
   const a=document.createElement("a"); a.href=URL.createObjectURL(blob);
@@ -1944,31 +2247,72 @@ function modKey(m){ return m.target + (m.sub?(':'+m.sub):''); }
 function hpAbove(){ return state.status.hp.cur > statusMax('hp')/2; }
 /* `acima` pode ser passado pronto para evitar a recursão
    activeModifiers → gate de vida → hpAbove → statusMax → sumMods → activeModifiers. */
+/* Condição livre do usuário. Mesma lista branca do evalFormula, mais os comparadores.
+   A segurança não vem de confiar no texto: vem de trocar TODO nome conhecido por número e
+   então exigir que só restem dígitos, operadores e parênteses. Qualquer letra sobrando
+   (nome errado, prosa, tentativa de chamar algo) reprova no teste e devolve o padrão —
+   nada do que o usuário escreveu chega a ser executado como código. */
+function avaliarCondicao(expr, padrao){
+  padrao = (padrao===undefined) ? true : padrao;
+  if(expr==null || String(expr).trim()==='') return padrao;
+  let s = interpolarTags(String(expr));                       // {Vida} → número
+  const vars=formulaVars(), keys=Object.keys(vars).sort((a,b)=>b.length-a.length);
+  for(const k of keys){ if(s.includes(k)) s=s.split(k).join('('+(vars[k]||0)+')'); }   // nomes soltos também
+  s = s.replace(/\be\b/gi,'&&').replace(/\bou\b/gi,'||')      // "e" / "ou" em português
+       .replace(/(^|[^<>!=])=(?!=)/g,'$1==')                  // "=" solto vira comparação
+       .replace(/x/gi,'*').replace(/,/g,'.');
+  if(!/^[-0-9+*/(). <>=!&|]*$/.test(s)) return padrao;        // sobrou letra → não avalia
+  try{ const v=Function('"use strict";return('+s+')')(); return !!v; }catch(e){ return padrao; }
+}
 function gateSatisfied(t, acima){
   if(acima===undefined) acima=hpAbove();
   switch(t.gate){
     case 'above-half': return acima;
     case 'below-half': return !acima;
     case 'stacks': return clamp(t.stacks||0,0,t.stacksMax||99)>0;
+    // Condição livre: qualquer conta contra qualquer campo da ficha.
+    case 'cond': return avaliarCondicao(t.cond, false);
     default: return true; // always
   }
 }
 function talentActive(t, acima){ return t.active!==false && gateSatisfied(t, acima); }
+/* Lista parcial publicada durante a 2ª passada de activeModifiers. Enquanto está preenchida,
+   qualquer reentrada devolve ela em vez de recalcular — é o que quebra o ciclo
+   activeModifiers → gatilho → formulaVars → sumMods → activeModifiers. */
+let _modsParciais = null;
 function activeModifiers(){
+  if(_modsParciais) return _modsParciais;
   const out=[];
   const push=(src, mods, mult)=>{ for(const m of (mods||[])){ if(m && m.target && m.target!=='nota' && m.value){ const v=(+m.value||0)*(mult==null?1:mult); if(v) out.push({src, key:modKey(m), value:v, target:m.target, sub:m.sub}); } } };
   for(const c of state.condicoes){ if(c.ativa) push(c.nome, c.mods); }
   for(const b of state.buffs){ if(b.active!==false) push(b.nome||'Buff', b.mods); }
   for(const arr of [state.weapons,state.equip,state.inventory]) for(const it of arr){ if(it.active) push(it.nome||'Item', it.mods); }
-  // ponytail: modsPorAcc sai do EFFECTS_DB pelo id, não do efeito salvo na sessão. Assim um
-  // efeito já aplicado antes desta mudança passa a valer sem migração de sessão.
-  for(const e of runtime.effects){ if(e.active!==false){ push(e.name, e.mods);
-    const mp=(EFFECTS_DB.find(x=>x.id===e.id)||{}).modsPorAcc; if(mp) push(e.name, mp, Math.max(0,num(e.acc))); } }
-  // 2ª passada: talentos/mecânicas com gatilho de vida. O limiar sai dos modificadores já
-  // coletados acima — assim não se consulta statusMax() (que chamaria isto de volta).
+  // ponytail: os modificadores do efeito saem do EFFECTS_DB pelo id, não do objeto salvo na
+  // sessão — aplicarEfeitoSistema monta o fx com `mods:(mods||[])` vindo do ARGUMENTO, então o
+  // que estivesse no catálogo era descartado no spread. Buscar pelo id também faz um efeito já
+  // aplicado antes desta mudança passar a valer, sem migração de sessão.
+  //   mods       → vale uma vez
+  //   modsPorAcc → multiplicado pelo grau/acúmulo
+  for(const e of runtime.effects){ if(e.active!==false){
+    push(e.name, e.mods);                                  // modificadores próprios da aplicação
+    const meta=EFFECTS_DB.find(x=>x.id===e.id)||{};
+    if(meta.mods) push(e.name, meta.mods);
+    if(meta.modsPorAcc) push(e.name, meta.modsPorAcc, Math.max(0,num(e.acc)));
+  } }
+  // 2ª passada: talentos/mecânicas com gatilho. O limiar sai dos modificadores já coletados
+  // acima — assim não se consulta statusMax() (que chamaria isto de volta).
   const maxHp=Math.max(0, autoScale(STATUS_SCALE.hp)+(state.status.hp.bonus||0)+out.filter(m=>m.key==='max:hp').reduce((a,m)=>a+m.value,0));
   const acima=state.status.hp.cur > maxHp/2;
-  for(const t of [...classMecs(), ...state.talents]){ if(talentActive(t,acima)){ const mult=(t.gate==='stacks')?clamp(t.stacks||0,0,t.stacksMax||99):1; push(t.nome, t.mods, mult); } }
+  // Um gatilho de condição livre lê QUALQUER campo da ficha (formulaVars → totalPericia →
+  // skillMods → sumMods → activeModifiers), ou seja, chama isto de volta. Publicar a lista
+  // parcial faz a reentrância devolver o que já foi coletado em vez de girar para sempre.
+  // CETO CONHECIDO: a condição de um talento enxerga condições, buffs, itens e efeitos, mas
+  // NÃO os modificadores de outros talentos — a mesma limitação que o gatilho de vida sempre
+  // teve. Um talento que dependa do bônus de outro talento precisaria de uma 3ª passada.
+  _modsParciais = out;
+  try{
+    for(const t of [...classMecs(), ...state.talents]){ if(talentActive(t,acima)){ const mult=(t.gate==='stacks')?clamp(t.stacks||0,0,t.stacksMax||99):1; push(t.nome, t.mods, mult); } }
+  } finally { _modsParciais = null; }
   // Comunhão: "vantagem em testes de Resistência externos" é ganho de ATRIBUTO —
   // física = Vitalidade e Constituição, mental = Mente e Sabedoria — e escorre para as perícias.
   if(state.cr.ativa && num(state.cr.valor)>0){
@@ -1991,7 +2335,11 @@ function activeDiceBonuses(cat){
     // exatamente como antes — nenhuma migração necessária.
     const pct = (dc.bonusPct==null) ? 100 : num(dc.bonusPct);
     let mult=1;
-    if(dc.doubleWhen==='above-half'&&hpAbove())mult=1+pct/100; else if(dc.doubleWhen==='below-half'&&!hpAbove())mult=1+pct/100;
+    const vale = dc.doubleWhen==='above-half' ? hpAbove()
+               : dc.doubleWhen==='below-half' ? !hpAbove()
+               : dc.doubleWhen==='cond'       ? avaliarCondicao(dc.cond, false)   // condição livre
+               : false;
+    if(vale) mult=1+pct/100;
     out.push({src, die:dc.die, count, mult, flat: dc.flatFormula?Math.floor(evalFormula(dc.flatFormula,0)):(dc.flat||0)});
   };
   const handle=(src,dice)=>{ if(Array.isArray(dice)) dice.forEach(x=>consider(src,x)); else consider(src,dice); };
@@ -2028,7 +2376,10 @@ function statusMax(key){
 function infoVal(key){ // mobilidade/alcance/carrega(max)
   const map={mobilidade:'mobBonus',alcance:'alcBonus',carrega:'cargaBonus'};
   const tgt={mobilidade:'mobilidade',alcance:'alcance',carrega:'carga'}[key];
-  return Math.max(0, autoScale(INFO_SCALE[key]) + (state.info[map[key]]||0) + sumMods(tgt));
+  let v = autoScale(INFO_SCALE[key]) + (state.info[map[key]]||0) + sumMods(tgt);
+  // Lentidão é -10% por acúmulo, não -N: o percentual entra depois do aditivo.
+  if(key==='mobilidade'){ const pct=sumMods('mobpct'); if(pct) v=Math.floor(v*(1+pct/100)); }
+  return Math.max(0, v);
 }
 /* Resistência efetiva = pool atual (arm.cur) + TUDO que soma resistência.
    Usa derived() porque a Comunhão entra lá, e não como modificador em activeModifiers() —
@@ -2321,7 +2672,24 @@ function critInfo(mods, override){
    20 ou 1 natural = Extremo / Desastre · dentro da faixa (ex.: 19 ou 2) = vantagem/desvantagem. */
 /* Dados de vantagem/desvantagem de uma perícia: +1 = rola um D20 a mais e fica com o melhor,
    −1 = rola a mais e fica com o pior. É diferente de "ponto de vantagem", que é modificador. */
-function vantagemDados(periciaNome){ return sumMods('vdado:'+periciaNome); }
+/* Dados de vantagem de uma perícia. Três fontes somam:
+   vdado:<perícia> (específico) · vdado: (sem sub = TODAS, ex. Sono e Pavor) ·
+   dfis/dment conforme o tipo do grupo da perícia (ex. Exaustão: -6 físicos, -3 mentais). */
+function vantagemDados(periciaNome){
+  const t=tipoGrupo(grupoDaPericia(periciaNome));
+  return sumMods('vdado:'+periciaNome) + sumMods('vdado')
+       + (t==='fisico'?sumMods('dfis'):0)
+       + (t==='mental'?sumMods('dment'):0);
+}
+/* Rolagem bloqueada por efeito (Desconcentração impede dados mentais). */
+function rolagemBloqueada(periciaNome){
+  const t=tipoGrupo(grupoDaPericia(periciaNome));
+  if(t && sumMods('bloqueio:'+t)>0){
+    const fonte=(modSources('bloqueio:'+t)[0]||{}).src||'um efeito';
+    return `${fonte} impede rolar dados ${t==='fisico'?'físicos':'mentais'}`;
+  }
+  return '';
+}
 function roll(label, mod, override, category, vant){
   vant=Math.floor(num(vant));
   const dados=[]; for(let i=0;i<1+Math.abs(vant);i++) dados.push(d(20));
@@ -2859,7 +3227,7 @@ function renderAttrs(){
         <div class="coll-icon" style="color:var(--g-${g.cor})">${g.icon}</div>
         <div class="coll-name" style="color:var(--g-${g.cor})">${esc(g.nome)}</div>
         <div class="coll-mod">Mod <input type="number" value="${g.mod}"/></div>
-        <div></div>
+        <select class="coll-tipo" title="Os dados deste grupo contam como físicos ou mentais? Usado por Exaustão, Sobrecarga e Desconcentração. O livro não define a lista — este é o padrão, ajuste à sua mesa."></select>
         <div class="coll-arrow">▸</div>
       </div>
       <div class="coll-body"></div>
@@ -2868,6 +3236,12 @@ function renderAttrs(){
     const modInp=head.querySelector('input');
     modInp.onclick=e=>e.stopPropagation();
     modInp.onchange=()=>{ g.mod=parseInt(modInp.value)||0; save(); recompute(); };
+    // tipo do grupo (físico/mental/neutro): padrão deduzido, mas editável pelo jogador
+    const tipoSel=head.querySelector('.coll-tipo');
+    TIPOS_GRUPO.forEach(([v,l])=>tipoSel.appendChild(el(`<option value="${v}">${l}</option>`)));
+    tipoSel.value=tipoGrupo(g.nome);
+    tipoSel.onclick=e=>e.stopPropagation();
+    tipoSel.onchange=()=>{ g.tipo=tipoSel.value; save(); recompute(); };
     head.onclick=keepToggle('attr:'+g.nome, head, body);
     g.pericias.forEach((p,pi)=>{
       const extra=skillMods(g.nome,p.n);
@@ -2883,7 +3257,12 @@ function renderAttrs(){
       </div>`);
       const inp=row.querySelector('.mod-edit');
       inp.onchange=()=>{ p.m=parseInt(inp.value)||0; save(); recompute(); };
-      row.querySelector('.btn-dice').onclick=()=>roll(p.n, tp.bonusVal, p.crit, SKILL_CAT[p.n]||'pericia', vantagemDados(p.n));
+      row.querySelector('.btn-dice').onclick=()=>{
+        // Desconcentração impede rolar dados mentais; o livro diz "não pode rolar", não "-N".
+        const trava=rolagemBloqueada(p.n);
+        if(trava){ toast(`${p.n}: ${trava}`,'falha'); return; }
+        roll(p.n, tp.bonusVal, p.crit, SKILL_CAT[p.n]||'pericia', vantagemDados(p.n));
+      };
       body.appendChild(row);
     });
     list.appendChild(sec);
@@ -3707,8 +4086,10 @@ const ITEM_SCHEMAS = {
     {k:'nivelacao',l:'Nivelação',t:'select',opts:['Padrão','Bronze','Prata','Ouro']},
     {k:'active',l:'Ativo',t:'check'},
     // opcional:true = bloco escondido até o usuário adicionar (ou já ter conteúdo salvo)
-    {k:'gate',l:'Gatilho',t:'select',opcional:true,opts:[['always','Sempre'],['above-half','Acima da metade da vida'],['below-half','Abaixo da metade da vida'],['stacks','Por acúmulo (com teto)']]},
-    {k:'stacksMax',l:'Teto de acúmulos',t:'number',opcional:true,bloco:'gate'},
+    {k:'gate',l:'Gatilho',t:'select',opcional:true,reflow:true,opts:[['always','Sempre'],['above-half','Acima da metade da vida'],['below-half','Abaixo da metade da vida'],['stacks','Por acúmulo (com teto)'],['cond','Condição personalizada…']]},
+    {k:'stacksMax',l:'Teto de acúmulos',t:'number',opcional:true,bloco:'gate',showIf:d=>d.gate==='stacks'},
+    {k:'cond',l:'Condição — vale quando for verdadeira. Ex.: {Vida} < {VidaMax}/2  ·  {Mana} >= 10  ·  {Carga} > {CargaMax}  ·  {Determinação} >= 5 e {Sanidade} > 0',
+     t:'cond',opcional:true,bloco:'gate',full:true,showIf:d=>d.gate==='cond'},
     {k:'raios',l:'Raios de ação (aparecem no Resumo de Combate) — aceita {tag}',t:'lista',campos:CAMPOS_RAIO,addLbl:'Raio',full:true,opcional:true},
     {k:'desc',l:'Descrição — aceita {tag} e {conta}, ex.: {Medicina} ou {0.3 x Medicina}',t:'textarea',full:true},
     {k:'mods',l:'Modificadores (×acúmulo quando gatilho = por acúmulo)',t:'mods',full:true,opcional:true},
@@ -3813,7 +4194,15 @@ function buildDiceEditor(container, data, key){
   const catsWrap=el('<div class="dice-cats"></div>');
   ROLL_CATS.forEach(([v,l])=>{ const id='dc_'+v; const lab=el(`<label class="dice-cat"><input type="checkbox" ${(cur.cats||[]).includes(v)?'checked':''}> ${l}</label>`); lab.querySelector('input').dataset.cat=v; catsWrap.appendChild(lab); });
   const dblSel=el('<select title="Quando o bônus se aplica"></select>');
-  [['none','Nunca ampliar'],['above-half','Ampliar acima da metade da vida'],['below-half','Ampliar abaixo da metade da vida']].forEach(([v,l])=>{ const o=el(`<option value="${v}">${l}</option>`); if((cur.doubleWhen||'none')===v)o.selected=true; dblSel.appendChild(o); });
+  [['none','Nunca ampliar'],['above-half','Ampliar acima da metade da vida'],['below-half','Ampliar abaixo da metade da vida'],['cond','Ampliar quando a condição for verdadeira…']].forEach(([v,l])=>{ const o=el(`<option value="${v}">${l}</option>`); if((cur.doubleWhen||'none')===v)o.selected=true; dblSel.appendChild(o); });
+  // condição livre do dado bônus, do mesmo motor do gatilho de talento
+  const condWrap=el('<div class="cond-campo"></div>');
+  const condInp=el('<input type="text" placeholder="ex.: {Vida} < {VidaMax}/2  ·  {Estâmina} <= 3">');
+  condInp.value=cur.cond||'';
+  const condAjuda=el('<button type="button" class="btn-mini" title="Ver as chaves disponíveis">{ }</button>');
+  condAjuda.onclick=()=>abrirTags();
+  const condEco=el('<span class="cond-eco"></span>');
+  condWrap.append(condInp, condAjuda, condEco);
   // ponytail: "dobrar" deixou de ser fixo. 100% = o dobro de antes; 25, 10, o que for.
   const pctWrap=el('<label class="dice-pct">Ampliar em <input type="number" step="5" style="width:64px"> %</label>');
   const pctInp=pctWrap.querySelector('input');
@@ -3821,12 +4210,16 @@ function buildDiceEditor(container, data, key){
   const sync=()=>{
     const die=parseInt(dieSel.value)||0;
     pctWrap.style.display = (dblSel.value==='none') ? 'none' : '';
+    condWrap.style.display = (dblSel.value==='cond') ? 'flex' : 'none';
+    if(dblSel.value==='cond') condEco.textContent = condInp.value.trim()
+      ? (avaliarCondicao(condInp.value,false) ? '✓ verdadeira agora' : '✕ falsa agora') : '';
     if(!die){ data[key]=null; return; }
     const cats=[...catsWrap.querySelectorAll('input:checked')].map(i=>i.dataset.cat);
-    data[key]={die, cats, doubleWhen:dblSel.value, bonusPct:num(pctInp.value)};
+    data[key]={die, cats, doubleWhen:dblSel.value, bonusPct:num(pctInp.value), cond:condInp.value};
   };
-  dieSel.onchange=sync; dblSel.onchange=sync; pctInp.oninput=sync; catsWrap.querySelectorAll('input').forEach(i=>i.onchange=sync);
-  container.append(el('<div class="muted">Dado bônus somado às rolagens das categorias marcadas (deixe "Nenhum" para desligar).</div>'), dieSel, catsWrap, dblSel, pctWrap);
+  dieSel.onchange=sync; dblSel.onchange=sync; pctInp.oninput=sync; condInp.oninput=sync;
+  catsWrap.querySelectorAll('input').forEach(i=>i.onchange=sync);
+  container.append(el('<div class="muted">Dado bônus somado às rolagens das categorias marcadas (deixe "Nenhum" para desligar).</div>'), dieSel, catsWrap, dblSel, pctWrap, condWrap);
   sync();
 }
 function buildDiceListEditor(container, arr){
@@ -4207,6 +4600,19 @@ function openItemEditor(type, index, dataExistente){
     if(f.t==='lista'){ if(!Array.isArray(data[f.k])) data[f.k]=[]; const box=el('<div class="mods-editor"></div>'); buildListaEditor(box, data[f.k], f.campos, f.addLbl); wrap.appendChild(box); form.appendChild(wrap); return; }
     if(f.t==='mods'){ if(!Array.isArray(data[f.k])) data[f.k]=[]; const box=el('<div class="mods-editor"></div>'); buildModsEditor(box, data[f.k]); wrap.appendChild(box); form.appendChild(wrap); return; }
     if(f.t==='terms'){ if(!Array.isArray(data[f.k])) data[f.k]=[]; const box=el('<div class="mods-editor"></div>'); buildModsEditor(box, data[f.k], TERM_TARGETS); wrap.appendChild(box); form.appendChild(wrap); return; }
+    if(f.t==='cond'){
+      // campo de condição livre: texto + atalho para as chaves + eco de verdadeiro/falso agora
+      const box=el('<div class="cond-campo"></div>');
+      const inp=el('<input type="text" placeholder="{Vida} < {VidaMax}/2">');
+      inp.value=data[f.k]||''; inp.dataset.k=f.k; inp.dataset.t='text';
+      const ajuda=el('<button type="button" class="btn-mini" title="Ver as chaves disponíveis">{ }</button>');
+      ajuda.onclick=()=>abrirTags();
+      const eco=el('<span class="cond-eco"></span>');
+      const atualiza=()=>{ data[f.k]=inp.value; eco.textContent = inp.value.trim()
+        ? (avaliarCondicao(inp.value,false)?'✓ verdadeira agora':'✕ falsa agora') : ''; };
+      inp.oninput=atualiza; atualiza();
+      box.append(inp, ajuda, eco); wrap.appendChild(box); form.appendChild(wrap); return;
+    }
     if(f.t==='dice'){ const box=el('<div class="dice-editor"></div>'); buildDiceEditor(box, data, f.k); wrap.appendChild(box); form.appendChild(wrap); return; }
     if(f.t==='dicelist'){ if(!Array.isArray(data[f.k])) data[f.k]=[]; const box=el('<div class="mods-editor"></div>'); buildDiceListEditor(box, data[f.k]); wrap.appendChild(box); form.appendChild(wrap); return; }
     let inp;
@@ -4346,11 +4752,177 @@ function renderCompanions(){
     c.appendChild(card);
   });
 }
-function initNotes(){
-  document.querySelectorAll('[data-note]').forEach(ta=>{
-    ta.value=state.notas[ta.dataset.note]||'';
-    ta.addEventListener('input',()=>{ state.notas[ta.dataset.note]=ta.value; save(); });
+/* =========================================================================
+   NOTAS RICAS
+   As abas deixaram de ser <textarea> e viraram contenteditable: negrito, itálico,
+   sublinhado, títulos, listas, cor, fonte, link e imagem.
+
+   FRONTEIRA DE CONFIANÇA: a ficha é legível pelo mestre e, com publica=true, por
+   link. Então TODO HTML que entra — colado da área de transferência ou vindo do
+   que está salvo — passa por limparHtml() antes de encostar no DOM. A lista é
+   branca: só as tags e atributos abaixo sobrevivem; script, iframe, on*, srcdoc,
+   javascript:/data: em href e afins são descartados, não escapados.
+   ========================================================================= */
+const TAGS_OK = new Set(['B','STRONG','I','EM','U','S','STRIKE','BR','P','DIV','SPAN','UL','OL','LI',
+                         'H1','H2','H3','H4','BLOCKQUOTE','CODE','PRE','HR','A','IMG','FONT',
+                         'TABLE','THEAD','TBODY','TR','TD','TH','SUB','SUP','MARK']);
+const ATTR_OK = { A:['href','title'], IMG:['src','alt','title','width'], FONT:['face','color','size'],
+                  SPAN:['style'], P:['style'], DIV:['style'], LI:['style'], TD:['style'], TH:['style'],
+                  H1:['style'], H2:['style'], H3:['style'], H4:['style'] };
+const ESTILO_OK = /^(color|background-color|font-size|font-family|font-weight|font-style|text-align|text-decoration)\s*:/i;
+
+function urlSegura(u){
+  const s=String(u||'').trim();
+  if(/^(https?:|mailto:)/i.test(s)) return s;
+  if(/^data:image\/(png|jpe?g|gif|webp);base64,/i.test(s)) return s;   // imagem colada
+  return '';
+}
+function limparHtml(html){
+  const doc=document.implementation.createHTMLDocument('');
+  doc.body.innerHTML=String(html==null?'':html);
+  // 1) Desembrulha tag proibida e REPETE até parar de achar. O laço é necessário: ao promover
+  //    os filhos de uma tag removida, eles entram numa posição que uma varredura única já
+  //    passou — era assim que <svg><use onload=...> escapava, com o <svg> sumindo e o <use>
+  //    ficando intacto. Também remove de vez o que não pode deixar conteúdo para trás.
+  const SOME_INTEIRO=new Set(['SCRIPT','STYLE','IFRAME','OBJECT','EMBED','FORM','INPUT','BUTTON',
+                              'TEXTAREA','SELECT','LINK','META','BASE','SVG','MATH','TEMPLATE','NOSCRIPT']);
+  for(let volta=0; volta<30; volta++){
+    let mudou=false;
+    for(const e2 of [...doc.body.querySelectorAll('*')]){
+      const tag=String(e2.tagName||'').toUpperCase();
+      if(TAGS_OK.has(tag)) continue;
+      if(SOME_INTEIRO.has(tag)) e2.remove();                 // conteúdo some junto
+      else { const pai=e2.parentNode;                        // tag some, texto fica
+             while(e2.firstChild) pai.insertBefore(e2.firstChild, e2);
+             pai.removeChild(e2); }
+      mudou=true;
+    }
+    if(!mudou) break;
+  }
+  // 2) Só então limpa atributos do que sobrou — tudo que resta está na lista branca.
+  for(const e2 of doc.body.querySelectorAll('*')){
+    const tag=String(e2.tagName||'').toUpperCase();
+    const permitidos=ATTR_OK[tag]||[];
+    for(const a of [...e2.attributes]){
+      const nome=a.name.toLowerCase();
+      if(!permitidos.includes(nome)){ e2.removeAttribute(a.name); continue; }
+      if(nome==='href'||nome==='src'){
+        const ok=urlSegura(a.value);
+        if(!ok) e2.removeAttribute(a.name); else e2.setAttribute(a.name, ok);
+      }
+      if(nome==='style'){
+        const limpo=a.value.split(';').map(x=>x.trim()).filter(x=>x && ESTILO_OK.test(x)).join('; ');
+        if(limpo) e2.setAttribute('style', limpo); else e2.removeAttribute('style');
+      }
+    }
+    if(tag==='A'){ e2.setAttribute('target','_blank'); e2.setAttribute('rel','noopener noreferrer'); }
+  }
+  return doc.body.innerHTML;
+}
+/* Nota antiga é texto puro. Sem tag nenhuma, escapa e preserva as quebras de linha —
+   assim ninguém perde o que já tinha escrito, nem vê o texto virar uma linha só. */
+function notaParaHtml(v){
+  const s=String(v==null?'':v);
+  if(!s) return '';
+  if(/<(b|i|u|p|div|span|br|ul|ol|li|h[1-4]|img|a|font|strong|em|table)\b/i.test(s)) return limparHtml(s);
+  return '<div>'+esc(s).replace(/\n/g,'</div><div>')+'</div>';
+}
+
+/* Reduz a imagem colada antes de guardar: a ficha inteira vai num campo só do
+   Supabase, então uma foto de celular crua estouraria a linha. 900px/JPEG 0.72. */
+function encolherImagem(file, cb){
+  const fr=new FileReader();
+  fr.onload=()=>{
+    const img=new Image();
+    img.onload=()=>{
+      const max=900, esc2=Math.min(1, max/Math.max(img.width,img.height));
+      const c=document.createElement('canvas');
+      c.width=Math.round(img.width*esc2); c.height=Math.round(img.height*esc2);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      cb(c.toDataURL('image/jpeg',0.72));
+    };
+    img.onerror=()=>cb(null);
+    img.src=fr.result;
+  };
+  fr.onerror=()=>cb(null);
+  fr.readAsDataURL(file);
+}
+function tamanhoNotas(){ return Math.round(JSON.stringify(state.notas||{}).length/1024); }
+
+const FERRAMENTAS = [
+  ['bold','𝐁','Negrito (Ctrl+B)'], ['italic','𝐼','Itálico (Ctrl+I)'],
+  ['underline','U̲','Sublinhado (Ctrl+U)'], ['strikeThrough','S̶','Tachado'],
+  ['|'], ['formatBlock:h2','H²','Título'], ['formatBlock:h3','H³','Subtítulo'],
+  ['formatBlock:blockquote','❝','Citação'], ['formatBlock:pre','‹›','Bloco de código'],
+  ['|'], ['insertUnorderedList','•','Lista'], ['insertOrderedList','1.','Lista numerada'],
+  ['|'], ['justifyLeft','⇤','Alinhar à esquerda'], ['justifyCenter','↔','Centralizar'],
+  ['|'], ['cor','🎨','Cor do texto'], ['fonte','ℱ','Fonte'], ['tamanho','⇕','Tamanho'],
+  ['|'], ['link','🔗','Link'], ['imagem','🖼','Imagem (ou cole/arraste direto)'],
+  ['insertHorizontalRule','―','Linha divisória'],
+  ['|'], ['removeFormat','⌫','Limpar formatação']
+];
+const FONTES = ['Rajdhani','Cinzel Decorative','JetBrains Mono','Georgia','Arial','Courier New'];
+
+function notaAtiva(){ return document.querySelector('.tab-pane.active [data-note]'); }
+function aplicaCmd(cmd, valor){
+  const alvo=notaAtiva(); if(!alvo) return;
+  alvo.focus();
+  if(cmd.startsWith('formatBlock:')) document.execCommand('formatBlock', false, cmd.split(':')[1]);
+  else document.execCommand(cmd, false, valor);
+  gravaNota(alvo);
+}
+function gravaNota(elm){ state.notas[elm.dataset.note]=limparHtml(elm.innerHTML); save(); }
+
+function montaBarraNotas(){
+  const bar=document.getElementById('noteBar'); if(!bar || bar.childElementCount) return;
+  FERRAMENTAS.forEach(([cmd,rot,tit])=>{
+    if(cmd==='|'){ bar.appendChild(el('<span class="nb-sep"></span>')); return; }
+    const b=el(`<button type="button" class="nb-btn" title="${esc(tit)}">${rot}</button>`);
+    b.onmousedown=e=>e.preventDefault();          // não perder a seleção do texto
+    b.onclick=()=>{
+      if(cmd==='cor'){ const i=el('<input type="color">'); i.onchange=()=>aplicaCmd('foreColor',i.value); i.click(); return; }
+      if(cmd==='fonte'){ const f=prompt('Fonte:\n'+FONTES.join(' · '),'Rajdhani'); if(f) aplicaCmd('fontName',f); return; }
+      if(cmd==='tamanho'){ const s=prompt('Tamanho de 1 a 7:','3'); if(s) aplicaCmd('fontSize',s); return; }
+      if(cmd==='link'){ const u=urlSegura(prompt('Endereço do link:','https://')); if(u) aplicaCmd('createLink',u); return; }
+      if(cmd==='imagem'){
+        const inp=el('<input type="file" accept="image/*">');
+        inp.onchange=()=>{ const f=inp.files[0]; if(!f) return;
+          encolherImagem(f, d=>{ if(d){ aplicaCmd('insertImage',d); toast(`Imagem embutida · notas com ${tamanhoNotas()} KB`,'info'); }
+                                 else toast('Não consegui ler essa imagem','falha'); }); };
+        inp.click(); return;
+      }
+      aplicaCmd(cmd);
+    };
+    bar.appendChild(b);
   });
+  bar.appendChild(el('<span class="nb-info" id="nbInfo"></span>'));
+}
+
+function initNotes(){
+  montaBarraNotas();
+  document.querySelectorAll('[data-note]').forEach(nota=>{
+    nota.innerHTML=notaParaHtml(state.notas[nota.dataset.note]);
+    if(nota.dataset.ph) nota.setAttribute('data-ph', nota.dataset.ph);
+    if(nota.dataset.pronto) return;               // listeners só uma vez
+    nota.dataset.pronto='1';
+    nota.addEventListener('input',()=>{ gravaNota(nota); const i=document.getElementById('nbInfo'); if(i) i.textContent=tamanhoNotas()+' KB'; });
+    // Colar: entra como HTML limpo; imagem na área de transferência vira anexo embutido.
+    nota.addEventListener('paste',e=>{
+      const dt=e.clipboardData; if(!dt) return;
+      const arq=[...(dt.files||[])].find(f=>f.type.startsWith('image/'));
+      if(arq){ e.preventDefault(); encolherImagem(arq,d=>{ if(d){ aplicaCmd('insertImage',d); toast(`Imagem colada · notas com ${tamanhoNotas()} KB`,'info'); } }); return; }
+      const html=dt.getData('text/html');
+      if(html){ e.preventDefault(); document.execCommand('insertHTML',false,limparHtml(html)); gravaNota(nota); }
+    });
+    nota.addEventListener('dragover',e=>{ if(e.dataTransfer.types.includes('Files')) e.preventDefault(); });
+    nota.addEventListener('drop',e=>{
+      const arq=[...(e.dataTransfer.files||[])].find(f=>f.type.startsWith('image/'));
+      if(!arq) return;
+      e.preventDefault();
+      encolherImagem(arq,d=>{ if(d){ nota.focus(); aplicaCmd('insertImage',d); toast(`Imagem anexada · notas com ${tamanhoNotas()} KB`,'info'); } });
+    });
+  });
+  const i=document.getElementById('nbInfo'); if(i) i.textContent=tamanhoNotas()+' KB';
   document.querySelectorAll('#notesTabs .tab').forEach(t=>{
     t.onclick=()=>{
       document.querySelectorAll('#notesTabs .tab').forEach(x=>x.classList.remove('active'));
@@ -4384,6 +4956,75 @@ document.addEventListener('click',e=>{
   const d=e.target.closest('.card-desc,.mec-desc');
   if(d && String(getSelection()||'')==='') d.classList.toggle('aberta');
 });
+
+/* =========================================================================
+   COLAPSO EM TRÊS NÍVEIS  (painel → card → descrição)
+   Nenhum renderer foi tocado. Os .panel são HTML estático e só têm o miolo
+   re-renderizado, então o colapso deles se mantém sozinho; os .card-item são
+   recriados a cada render, e um MutationObserver reaplica o estado neles.
+   O que está recolhido fica em state.ui.colapso, então sobrevive ao F5 e
+   acompanha a ficha na nuvem — é layout de trabalho, não estado de sessão.
+   ========================================================================= */
+function uiColapso(){ if(!state.ui) state.ui={}; if(!state.ui.colapso) state.ui.colapso={}; return state.ui.colapso; }
+/* Só os nós de TEXTO do título. Os botões (a seta e o "todos" que injetamos, mais o
+   "+ Adicionar" do próprio painel) são elementos e ficam de fora — senão a chave do painel
+   passaria a ser o rótulo do primeiro botão assim que ele fosse inserido. */
+function tituloPainel(p){
+  const t=p&&p.querySelector('.panel-title'); if(!t) return '';
+  return [...t.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent).join(' ').trim();
+}
+function chaveCard(card){
+  const p=card.closest('.panel'), n=card.querySelector('.card-name');
+  return 'c:'+tituloPainel(p||document.body)+':'+((n?n.textContent:'')||'').trim();
+}
+function marcarColapso(chave, on){ const c=uiColapso(); if(on) c[chave]=1; else delete c[chave]; save(); }
+
+/* Injeta a seta nos cabeçalhos que ainda não têm. Idempotente: pode rodar sempre. */
+function porSetas(raiz){
+  (raiz||document).querySelectorAll('.panel > .panel-title:not(.sem-colapso)').forEach(t=>{
+    if(t.querySelector('.seta')) return;
+    t.insertBefore(el('<button class="seta" type="button" title="Recolher este painel">▾</button>'), t.firstChild);
+    t.insertBefore(el('<button class="tudo-btn" type="button" title="Recolher/expandir todos os itens deste painel">⊟ todos</button>'), t.firstChild);
+    const p=t.closest('.panel');
+    if(uiColapso()['p:'+tituloPainel(p)]) p.classList.add('colapsado');
+  });
+  (raiz||document).querySelectorAll('.card-item > .card-head').forEach(h=>{
+    if(h.querySelector('.seta')) return;
+    h.insertBefore(el('<button class="seta" type="button" title="Recolher este item">▾</button>'), h.firstChild);
+    const card=h.parentElement;
+    if(uiColapso()[chaveCard(card)]) card.classList.add('colapsado');
+  });
+}
+
+document.addEventListener('click',e=>{
+  const seta=e.target.closest('.seta');
+  if(seta){
+    e.stopPropagation();
+    const alvo=seta.closest('.card-item')||seta.closest('.panel');
+    if(!alvo) return;
+    const on=alvo.classList.toggle('colapsado');
+    marcarColapso(alvo.classList.contains('card-item')?chaveCard(alvo):'p:'+tituloPainel(alvo), on);
+    return;
+  }
+  const tudo=e.target.closest('.tudo-btn');
+  if(tudo){
+    e.stopPropagation();
+    const p=tudo.closest('.panel'), cards=[...p.querySelectorAll('.card-item')];
+    if(!cards.length) return;
+    const fechar=cards.some(c=>!c.classList.contains('colapsado'));   // algum aberto → fecha todos
+    cards.forEach(c=>{ c.classList.toggle('colapsado', fechar); marcarColapso(chaveCard(c), fechar); });
+    tudo.textContent = fechar?'⊞ todos':'⊟ todos';
+  }
+});
+
+// Cards nascem a cada render; reaplica neles a seta e o estado salvo.
+new MutationObserver(muts=>{
+  for(const m of muts) for(const n of m.addedNodes){
+    if(n.nodeType!==1) continue;
+    if(n.matches && n.matches('.card-item')) porSetas(n.parentElement);
+    else if(n.querySelector && n.querySelector('.card-item')) porSetas(n);
+  }
+}).observe(document.body,{childList:true,subtree:true});
 document.getElementById('fabDice').onclick=()=>document.getElementById('diceModal').classList.add('active');
 
 const nameEl=document.getElementById('charName');
@@ -4435,6 +5076,7 @@ function renderAll(){
   renderStateButtons(); renderReacoes(); renderCR(); renderEffects(); renderBuffs(); renderLog();
   renderTalents(); renderWeapons(); renderEquip(); renderInv(); renderCompanions();
   initNotes(); setImages(); applyStateVisual(runtime.currentState||'normal'); checkAutoStates();
+  porSetas();                       // setas de colapso nos painéis (os cards o observer cobre)
   const rn=document.getElementById('roundNum'); if(rn) rn.textContent=runtime.round;
   const rb=document.getElementById('roundBar'); if(rb) rb.style.display=runtime.inCombat?'flex':'none';
 }
