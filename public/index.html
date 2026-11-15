@@ -4961,6 +4961,11 @@ function blocoRotulo(f){ return String(f.l||f.k).split(/\s+[—(]/)[0].trim(); }
 function semearBloco(sch, chave, data){
   const f=sch.fields.find(x=>x.k===chave); if(!f) return;
   if(f.t==='dice')      data[chave]={die:4,cats:[],doubleWhen:'none',bonusPct:100};
+  // "No acúmulo cheio" SUBSTITUI os mods por acúmulo, então a semente útil é o que o talento
+  // já dá no teto (mods × teto). Abrir e ver "+3 Dano · +3 Resistência" diz sozinho que é
+  // troca, e sobra editar só a linha que muda — em vez de começar do zero e perder o resto.
+  else if(chave==='modsMax' && (data.mods||[]).length)
+    data[chave]=data.mods.map(m=>({...m, value:num(m.value)*(num(data.stacksMax)||1)}));
   else if(f.t==='mods'||f.t==='terms') data[chave]=[{target:'dano',value:1}];
   else if(f.t==='select') data[chave]=(f.opts||[]).map(o=>Array.isArray(o)?o[0]:o).find(v=>v&&v!=='always')||'';
   else if(f.t==='lista'||f.t==='efeitos'||f.t==='efeitosalvo'||f.t==='acoes'||f.t==='dicelist') data[chave]=[{}];
