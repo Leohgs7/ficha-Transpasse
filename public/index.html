@@ -1055,6 +1055,10 @@ const DEFAULT_STATE = {
   condicoes:[],
   bonusBase:[],
   talents:[],
+  // Melhorias do Talento de Classe escritas pelo jogador (XP_TABLE dá uma no Nv 5, 13 e 15).
+  // O livro só traz o texto de algumas classes; o resto o jogador digita aqui pelo card.
+  // Default [] — ficha salva sem a chave herda a vazia pelo deepMerge, sem precisar de migração.
+  classeMelhorias:[],
   weapons:[],
   equip:[],
   inventory:[],
@@ -1171,13 +1175,39 @@ function classeInfo(nome){ return CLASSES.find(c=>c.n===nome)||null; }
 /* ----- Mecânicas das classes, quebradas em blocos que o motor entende -----
    n=nome · d=descrição · mods/dice=efeito numérico · gate=always|above-half|below-half|stacks
    manual:true = o jogador liga quando a condição vale (furtividade, postura, investida…)
-   Sem mods/dice = puramente narrativo: fica como lembrete, não entra em conta.        */
+   Sem mods/dice = puramente narrativo: fica como lembrete, não entra em conta.
+   nivel:N      = bloco só vale a partir do Nível N NA CLASSE (XP_TABLE dá "Melhoria de
+                  Talento de Classe" nos níveis 5, 13 e 15). Antes disso aparece trancado.
+   substitui:"<n de outro bloco>" = ao destravar, aquele bloco some. É assim que uma melhoria
+                  que TROCA um número do talento base (D4 → D6) não soma em cima dele.
+   efeitosAlvo  = o que o ataque gruda no alvo; mesmo formato das armas.
+   O que o livro não der para uma classe fica a cargo do jogador: o card tem "+ Melhoria",
+   que grava em state.classeMelhorias e entra aqui pela mesma porta.                     */
 const CLASS_MEC = {
   "Lutador":[
     /* "o DANO adicional é dobrado" — só o D4 de ataque dobra; defesa e cura ficam simples. */
     {n:"Bônus versátil", d:"Ataques, defesas e instâncias de cura recebidas ganham +D4. Acima da metade da vida, o D4 de dano vale o dobro (defesa e cura não dobram).",
      dice:[{die:4,count:1,cats:["ataque"],doubleWhen:"above-half"},
            {die:4,count:1,cats:["defesa","cura"]}]},
+    /* Melhoria de Nv 5 (decisão do jogador em 2026-11-15): só o DANO vira D6, sempre. A defesa
+       segue D4. A CURA recebida vira D6 apenas abaixo da metade da vida; acima, continua D4.
+       Como o motor não troca o tamanho do dado por condição, a cura mora em dois blocos com
+       gatilhos opostos — nunca os dois ao mesmo tempo, então não somam. Deixar os dados de
+       ataque/defesa aqui e a cura lá evita repetir o mesmo número em dois lugares. */
+    {n:"Bônus versátil ampliado", nivel:5, substitui:"Bônus versátil",
+     d:"Melhoria de Nv 5: o dado de dano bônus sobe de D4 para D6. Acima da metade da vida, o D6 de dano vale o dobro. Defesas seguem com +D4.",
+     dice:[{die:6,count:1,cats:["ataque"],doubleWhen:"above-half"},
+           {die:4,count:1,cats:["defesa"]}]},
+    {n:"Cura recebida", nivel:5, gate:"above-half",
+     d:"Acima da metade da vida, as instâncias de cura recebidas ganham +D4.",
+     dice:[{die:4,count:1,cats:["cura"]}]},
+    {n:"Cura recebida reforçada", nivel:5, gate:"below-half",
+     d:"Melhoria de Nv 5: com metade da vida ou menos, as instâncias de cura recebidas ganham +D6 no lugar do +D4.",
+     dice:[{die:6,count:1,cats:["cura"]}]},
+    {n:"Castigo do punho", nivel:5, gate:"above-half",
+     d:"Melhoria de Nv 5: acima da metade da vida, cada ataque seu aplica Dor 01 e Retenção 01 no alvo (soma com o que a arma já aplicar).",
+     efeitosAlvo:[{alvo:"alvo",efeito:"dor",valorFormula:"",acumuloFormula:"1",duracaoFormula:""},
+                  {alvo:"alvo",efeito:"retencao",valorFormula:"",acumuloFormula:"1",duracaoFormula:""}]},
     {n:"Regeneração assistida", regenBonus:1, d:"Regeneração aplica somente 1 de cura adicional por rodada (no lugar do D4)."},
     {n:"Desarme na adversidade", gate:"below-half", d:"Abaixo da metade da vida, permite teste de Artes Marciais para desarmar o inimigo após uma defesa bem-sucedida."},
     {n:"Último fôlego", uso:"1x por combate", d:"Antes de cair em morrendo, contra-ataca como ação livre se o atacante estiver no seu alcance físico."}
@@ -1311,17 +1341,49 @@ function reporUsos(escopo){
   });
   if(mudou){ save(); renderTalents(); }
 }
+/* O nível que destrava uma melhoria é o da CLASSE, não o de personagem: XP_TABLE é indexada
+   por nivelPrimaria (ver aqGanho). Quem tem 3 na primária e 2 na secundária não chegou ao Nv 5
+   de nenhuma classe e não ganhou melhoria nenhuma. */
+function nivelClassePrimaria(){ return num(state.basicos.nivelPrimaria); }
+/* Melhorias escritas pelo jogador (state.classeMelhorias) no mesmo shape dos blocos do livro.
+   A chave é um id próprio, nunca o índice: usos/acúmulos/interruptor ficam em state.usos,
+   state.mecStacks e state.mecAtivas, e reordenar a lista mandaria o contador para a melhoria
+   errada se a chave viesse da posição. */
+function melhoriasDaFicha(classe, nvCls){
+  return (state.classeMelhorias||[]).map((x,i)=>({x,i}))
+    .filter(({x})=> x && (x.classe||classe)===classe)
+    .map(({x,i})=>{
+      const key='mel:'+(x.id||('i'+i)), gate=x.gate||'always', destravada=nvCls>=num(x.nivel);
+      return { key, nome:classe+' · '+(x.nome||'Melhoria'), curto:x.nome||'Melhoria', desc:x.desc||'',
+               uso:x.uso||'', manual:!!x.manual, gate, cond:x.cond||'', raios:x.raios||[],
+               expiraForaDeCombate:false,
+               mods:x.mods||[], dice:x.dice||null, regenBonus:0, stacksMax:num(x.stacksMax),
+               efeitosAlvo:x.efeitosAlvo||[], nivel:num(x.nivel), destravada, idxFicha:i,
+               stacks: gate==='stacks' ? clamp(num(state.mecStacks[key]),0,num(x.stacksMax)||99) : 0,
+               active: destravada && x.active!==false && (x.manual ? !!state.mecAtivas[key] : true) };
+    });
+}
 /* Mecânicas da classe primária em formato de talento (o motor já sabe ler este shape). */
 function classMecs(){
   const c=classeInfo(state.basicos.classePrimaria); if(!c) return [];
-  return (CLASS_MEC[c.n]||[]).map((m,i)=>{
-    const key=c.n+':'+i, gate=m.gate||'always';
+  const nvCls=nivelClassePrimaria(), base=CLASS_MEC[c.n]||[];
+  // bloco trocado por uma melhoria JÁ DESTRAVADA some; enquanto a melhoria estiver trancada,
+  // o original continua valendo (é o que o personagem tem antes do Nv 5).
+  const trocados=new Set(base.filter(m=>m.substitui && nvCls>=num(m.nivel)).map(m=>m.substitui));
+  // ponytail: a chave era o ÍNDICE no array (c.n+':'+i). Bastou inserir um bloco no meio de
+  // CLASS_MEC para os contadores de usos/acúmulos/interruptor de todo mundo apontarem para o
+  // bloco vizinho. É o mesmo motivo de as melhorias da ficha usarem id: a identidade é o NOME.
+  // Custo único da troca: quem já tinha contador gravado começa zerado — e esses contadores
+  // repõem sozinhos por combate/turno/sessão.
+  return base.filter(m=>!trocados.has(m.n)).map(m=>{
+    const key=c.n+':'+m.n, gate=m.gate||'always', destravada=nvCls>=num(m.nivel);
     return { key, nome:c.n+' · '+m.n, curto:m.n, desc:m.d, uso:m.uso||'', manual:!!m.manual, gate,
              expiraForaDeCombate:!!m.expiraForaDeCombate,
              mods:m.mods||[], dice:m.dice||null, regenBonus:m.regenBonus||0, stacksMax:m.stacksMax||0,
+             efeitosAlvo:m.efeitosAlvo||[], nivel:num(m.nivel), destravada,
              stacks: gate==='stacks' ? clamp(num(state.mecStacks[key]),0,m.stacksMax||99) : 0,
-             active: m.manual ? !!state.mecAtivas[key] : true };
-  });
+             active: destravada && (m.manual ? !!state.mecAtivas[key] : true) };
+  }).concat(melhoriasDaFicha(c.n, nvCls));
 }
 
 /* =========================================================================
@@ -1711,6 +1773,15 @@ function migrar(salvo){
       if(t.crCfg.marcaAtaque) t.crCfg.marcaAtaque=String(t.crCfg.marcaAtaque).replace(/(^|[^{\w])CR([^}\w]|$)/g,'$1{CR}$2');
     }
   });
+  // Melhorias de Talento de Classe: a chave dos contadores é o id, e o motor faz .map() nelas.
+  // Ficha de fora (nuvem/import) pode chegar com qualquer coisa nesse campo, então normaliza:
+  // nada que não seja array vira array, e quem não tem id ganha um aqui — antes de a lista ser
+  // renderizada ou de alguém remover um item e deslocar os índices.
+  if(salvo.classeMelhorias!==undefined && !Array.isArray(salvo.classeMelhorias)) salvo.classeMelhorias=[];
+  if(Array.isArray(salvo.classeMelhorias)){
+    salvo.classeMelhorias=salvo.classeMelhorias.filter(x=>x && typeof x==='object');
+    salvo.classeMelhorias.forEach(x=>{ if(!x.id) x.id='m'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); });
+  }
   // Ramos da Declinação: deepMerge troca array inteiro, então quem já tinha ficha
   // salva nunca veria os ramos novos. Acrescenta os que faltam preservando os níveis.
   if(Array.isArray(salvo.ramos)){
@@ -2160,6 +2231,82 @@ async function textoDeDocx(bytes){
           .replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&amp;/g,'&')
           .replace(/&quot;/g,'"').replace(/&apos;/g,"'");
 }
+/* ---- Extração POSICIONAL de PDF -----------------------------------------------------------
+   A ficha em PDF é uma TABELA: rótulo numa coluna, valor em outra, às vezes em linhas
+   diferentes. Ler o PDF como fluxo de texto embaralha coluna com coluna — foi o que fez a
+   primeira versão deste importador confundir campo com campo. Aqui cada pedaço de texto sai
+   com as coordenadas (x,y) em que foi desenhado, e as linhas e colunas são reconstruídas a
+   partir disso, que é a única forma confiável de ler tabela em PDF. */
+function runsDeStreamPdf(s, pagina, out){
+  let tx=0, ty=0, lx=0, ly=0, tl=0, i=0;
+  const desescapa=t=>t.replace(/\\\n/g,'')
+    .replace(/\\([0-7]{1,3})/g,(m,o)=>String.fromCharCode(parseInt(o,8)))
+    .replace(/\\(.)/g,(m,c)=>({n:'\n',r:'',t:'\t',b:'',f:''}[c]!==undefined?{n:'\n',r:'',t:'\t',b:'',f:''}[c]:c));
+  const emite=t=>{ if(t) out.push({pagina, x:tx, y:ty, i:i++, t}); };
+  const re=/(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+(-?[\d.]+)\s+Tm|(-?[\d.]+)\s+(-?[\d.]+)\s+(TD|Td)|(-?[\d.]+)\s+TL|T\*|\[((?:[^\][\\]|\\.)*)\]\s*TJ|\(((?:[^()\\]|\\.)*)\)\s*(Tj|')|BT|ET/g;
+  let m;
+  while((m=re.exec(s))){
+    if(m[0].endsWith('Tm')){ lx=parseFloat(m[5]); ly=parseFloat(m[6]); tx=lx; ty=ly; }
+    else if(m[9]){ const dx=parseFloat(m[7]), dy=parseFloat(m[8]);
+                   if(m[9]==='TD') tl=-dy;
+                   lx+=dx; ly+=dy; tx=lx; ty=ly; }
+    else if(m[10]!==undefined && m[0].endsWith('TL')){ tl=parseFloat(m[10]); }
+    else if(m[0]==='T*'){ ly-=tl; tx=lx; ty=ly; }
+    else if(m[11]!==undefined){ let t=''; for(const p of m[11].matchAll(/\(((?:[^()\\]|\\.)*)\)/g)) t+=desescapa(p[1]); emite(t); }
+    else if(m[12]!==undefined){ if(m[13]==="'"){ ly-=tl; tx=lx; ty=ly; } emite(desescapa(m[12])); }
+    else if(m[0]==='BT'){ tx=ty=lx=ly=0; }
+  }
+}
+/* Agrupa os pedaços em linhas por proximidade de y e ordena cada linha por x.
+   Devolve [{pagina, y, celulas:[{x,t}], texto}] na ordem de leitura. */
+function linhasDePdfRuns(runs, tolerancia){
+  const tol=tolerancia||3;
+  const porPagina={};
+  for(const r of runs){ (porPagina[r.pagina]=porPagina[r.pagina]||[]).push(r); }
+  const linhas=[];
+  for(const pg of Object.keys(porPagina).sort((a,b)=>a-b)){
+    const rs=porPagina[pg].slice().sort((a,b)=> b.y-a.y || a.x-b.x || a.i-b.i);
+    let atual=null;
+    for(const r of rs){
+      if(!atual || Math.abs(atual.y-r.y)>tol){
+        atual={pagina:+pg, y:r.y, celulas:[]};
+        linhas.push(atual);
+      }
+      atual.celulas.push({x:r.x, t:r.t});
+    }
+  }
+  for(const l of linhas){
+    l.celulas.sort((a,b)=>a.x-b.x);
+    // junta pedaços colados (mesma palavra quebrada em vários Tj) e separa colunas distantes
+    const juntas=[];
+    for(const c of l.celulas){
+      const ult=juntas[juntas.length-1];
+      if(ult && c.x-ult.fim<6){ ult.t+=c.t; ult.fim=c.x+c.t.length*4.2; }
+      else juntas.push({x:c.x, fim:c.x+c.t.length*4.2, t:c.t});
+    }
+    l.celulas=juntas.map(c=>({x:Math.round(c.x), t:c.t.trim()})).filter(c=>c.t);
+    l.texto=l.celulas.map(c=>c.t).join('  ');
+  }
+  return linhas.filter(l=>l.celulas.length);
+}
+async function linhasDePdf(bytes){
+  const cru=new TextDecoder('latin1').decode(bytes);
+  const runs=[]; let pagina=0;
+  const re=/stream\r?\n/g; let m;
+  while((m=re.exec(cru))){
+    const ini=m.index+m[0].length;
+    const fim=cru.indexOf('endstream',ini);
+    if(fim<0) continue;
+    const bruto=bytes.subarray(ini,fim);
+    let conteudo=null;
+    for(const fmt of ['deflate','deflate-raw']){ conteudo=await inflar(bruto,fmt); if(conteudo) break; }
+    const s = conteudo ? new TextDecoder('latin1').decode(conteudo) : cru.slice(ini,fim);
+    if(!/\bTj\b|\bTJ\b/.test(s)) continue;
+    runsDeStreamPdf(s, pagina++, runs);
+  }
+  return linhasDePdfRuns(runs);
+}
+
 function textoDeStreamPdf(s){
   // operadores de texto: (texto)Tj  e  [(a)-250(b)]TJ
   let saida='';
@@ -2624,6 +2771,14 @@ function formulaVars(){
   v['NivelDeclinacao']=v['NívelDeclinação']=state.metodos.nivelDeclinacao;
   for(const r of state.ramos) v[r.n]=r.nv;
   for(const g of state.atributos){ v[g.nome]=g.mod; for(const p of g.pericias) v[p.n]=totalPericia(g.nome,p.n).val; }
+  // "Modificador de Físico e Força" é como o livro fala, e era o que todo mundo escrevia entre
+  // chaves. Sem o apelido sobrava a palavra "Modificador" na conta, a whitelist reprovava e a
+  // chave ficava crua na tela. Apelido, não regex de limpeza: um nome desconhecido continua
+  // falhando à vista em vez de virar zero silencioso.
+  for(const g of state.atributos){
+    v['Modificador de '+g.nome]=v['Mod de '+g.nome]=g.mod;
+    for(const p of g.pericias) v['Modificador de '+p.n]=v['Mod de '+p.n]=totalPericia(g.nome,p.n).val;
+  }
   // status: valor atual e máximo
   for(const k of STATUS_ORDER){ const nome=STATUS_META[k].name; v[nome]=state.status[k].cur; v[nome+'Max']=statusMax(k); }
   // Derivados dependem de derived(), que por sua vez avalia as fórmulas da Comunhão —
@@ -2680,7 +2835,13 @@ function ridersAtaque(){
   }
   for(const w of state.weapons){
     if(!w.mao) continue;
-    for(const r of (w.efeitosAlvo||[])) out.push({...r, src:w.nome});
+    for(const r of (w.efeitosAlvo||[])) out.push({...r, src:w.nome, deArma:true});
+  }
+  // Passivas que grudam efeito no ataque (melhoria de classe, talento). Diferente das auras,
+  // aqui o gatilho IMPORTA: "acima da metade da vida, aplica Dor 01" só vale acima da metade.
+  for(const t of [...classMecs(), ...state.talents]){
+    if(!talentActive(t)) continue;
+    for(const r of (t.efeitosAlvo||[])) out.push({...r, src:t.nome});
   }
   // marcas livres (texto), como a Comunhão ignorando Resistência do alvo
   if(state.cr.ativa && state.cr.valor>0){
@@ -2689,14 +2850,33 @@ function ridersAtaque(){
   }
   return out;
 }
+/* Duas fontes do MESMO efeito viram uma linha só, pela regra do catálogo — a mesma que
+   aplicarEfeitoSistema usa ao reaplicar: acumulativo soma (Retenção 1 da arma + Retenção 1 da
+   passiva = Retenção 2), "maior sobrepõe" e os de grau ficam com o maior. Sem isso o resumo
+   mostrava duas linhas de Retenção 1 e ninguém sabia qual valia.
+   DUAS ARMAS não somam entre si: cada golpe usa uma arma só, então entre armas vale a maior e
+   as passivas é que se somam por cima. Sem isso, empunhar duas armas de Retenção 1 anunciava
+   Retenção 2 num golpe que aplica 1. */
 function ridersTexto(){
-  return ridersAtaque().map(r=>{
-    if(r.texto) return `${r.texto} (${r.src})`;
+  const livres=[], juntos=new Map();
+  for(const r of ridersAtaque()){
+    if(r.texto){ livres.push(`${r.texto} (${r.src})`); continue; }
     const meta=EFFECTS_DB.find(e=>e.id===r.efeito);
+    if(!meta) continue;                       // rider salvo sem efeito: não vira "undefined" na tela
     const n=Math.floor(evalFormula(r.acumuloFormula,0));
     const dur=Math.floor(evalFormula(r.duracaoFormula,0));
-    return `${meta?meta.name:r.efeito}${n?` ${n}`:''}${dur?`/${dur}`:''} (${r.src})`;
+    const ac=juntos.get(r.efeito);
+    if(!ac){ juntos.set(r.efeito,{nome:meta.name, meta, arma:r.deArma?n:0, outros:r.deArma?0:n, dur, srcs:[r.src]}); continue; }
+    if(r.deArma) ac.arma = Math.max(ac.arma, n);
+    else         ac.outros = meta.accumulate ? ac.outros+n : Math.max(ac.outros, n);
+    ac.dur = meta.somaRodadas ? ac.dur+dur : Math.max(ac.dur, dur);
+    if(!ac.srcs.includes(r.src)) ac.srcs.push(r.src);
+  }
+  const somados=[...juntos.values()].map(a=>{
+    const n = a.meta.accumulate ? a.arma+a.outros : Math.max(a.arma, a.outros);
+    return `${a.nome}${n?` ${n}`:''}${a.dur?`/${a.dur}`:''} (${a.srcs.join(' + ')})`;
   });
+  return [...somados, ...livres];
 }
 /* Auras e raios ativos — precisam ficar à vista porque valem para quem está perto. */
 function aurasAtivas(){
@@ -3982,29 +4162,55 @@ function itemModBar(arrName, idx){
 const GATE_LABEL={always:'Sempre','above-half':'Acima da metade da vida','below-half':'Abaixo da metade da vida',stacks:'Por acúmulo'};
 function renderTalents(){
   const c=document.getElementById('talentList'); c.innerHTML='';
-  // Talento único da classe primária: vem da classe escolhida, não é item editável da lista.
+  // Talento da classe primária: o texto do livro não é editável, mas as MELHORIAS de nível são —
+  // o botão "+ Melhoria" grava em state.classeMelhorias e elas entram pelo mesmo classMecs().
   const cls=classeInfo(state.basicos.classePrimaria);
   if(cls){
     const card=el(`<div class="card-item" style="border-color:var(--border-strong)">
-      <div class="card-head"><div class="card-name">✦ ${esc(cls.n)} <span class="tag tag-amber" style="font-size:9px">Talento de Classe</span></div></div>
-      <div class="card-meta"><span>${esc(cls.papel)}</span><span>Classe primária</span></div>
+      <div class="card-head"><div class="card-name">✦ ${esc(cls.n)} <span class="tag tag-amber" style="font-size:9px">Talento de Classe</span></div>
+        <div class="card-actions"><button class="btn-mini add-melhoria" title="Adicionar melhoria de nível (Nv 5, 13 e 15)">+</button></div></div>
+      <div class="card-meta"><span>${esc(cls.papel)}</span><span>Classe primária Nv ${nivelClassePrimaria()}</span></div>
       <div class="card-desc">${esc(interpolarTags(cls.talento))}</div></div>`);
+    card.querySelector('.add-melhoria').onclick=()=>openItemEditor('classeMelhorias',null,
+      {...structuredClone(ITEM_SCHEMAS.classeMelhorias.def), classe:cls.n});
     classMecs().forEach(m=>{
       const on=talentActive(m), num_=(m.mods||[]).length||m.dice||m.regenBonus;
       const modsTxt=(m.mods||[]).map(x=>modLabel(x)+(m.gate==='stacks'?'/ac.':'')).join(' · ');
       const rotuloDado=dc=>`+${dc.count>1?dc.count:''}D${dc.die}${dc.flatFormula?'+('+dc.flatFormula+')':(dc.flat?'+'+dc.flat:'')} em ${(dc.cats||[]).join('/')}${dc.doubleWhen&&dc.doubleWhen!=='none'?` (+${pctDado(dc)}% ${dc.doubleWhen==='above-half'?'acima':'abaixo'}½)`:''}`;
       const diceTxt=m.dice?(Array.isArray(m.dice)?m.dice:[m.dice]).map(rotuloDado).join(' · '):'';
+      // efeitos que a melhoria gruda no ataque: o resumo de combate já soma com os da arma,
+      // aqui mostramos só o que ESTE bloco contribui
+      const alvoTxt=(m.efeitosAlvo||[]).map(e=>{
+        const meta=EFFECTS_DB.find(x=>x.id===e.efeito);
+        const n=Math.floor(evalFormula(e.acumuloFormula,0)), dur=Math.floor(evalFormula(e.duracaoFormula,0));
+        return `${meta?meta.name:e.efeito}${n?` ${n}`:''}${dur?`/${dur}`:''}`;
+      }).join(' · ');
       const row=el(`<div class="mec-row${on?'':' off'}">
         <div class="mec-head">
           <span class="mec-name">${esc(m.curto)}</span>
+          ${m.nivel?`<span class="tag ${m.destravada?'tag-green':'tag-amber'}" style="font-size:9px">${m.destravada?'Nv '+m.nivel:'🔒 Nv '+m.nivel}</span>`:''}
           ${m.uso?`<span class="tag tag-amber" style="font-size:9px">${esc(m.uso)}</span>`:''}
-          ${!num_?'<span class="muted" style="font-size:10px">narrativo</span>':''}
+          ${!num_&&!alvoTxt?'<span class="muted" style="font-size:10px">narrativo</span>':''}
           ${m.gate==='below-half'?'<span class="tag tag-green" style="font-size:9px">abaixo ½ vida</span>':''}
+          ${m.gate==='above-half'?'<span class="tag tag-green" style="font-size:9px">acima ½ vida</span>':''}
         </div>
         <div class="mec-desc">${esc(interpolarTags(m.desc))}</div>
       </div>`);
       const regenTxt=m.regenBonus?`+${m.regenBonus} por rodada de Regeneração`:'';
-      if(modsTxt||diceTxt||regenTxt) row.appendChild(el(`<div class="buff-mods">${modsTxt?`<span class="m">${esc(modsTxt)}</span>`:''}${diceTxt?`<span class="m" style="color:var(--uni)">${esc(diceTxt)}</span>`:''}${regenTxt?`<span class="m" style="color:var(--ok)">${esc(regenTxt)}</span>`:''}</div>`));
+      if(modsTxt||diceTxt||regenTxt||alvoTxt) row.appendChild(el(`<div class="buff-mods">${modsTxt?`<span class="m">${esc(modsTxt)}</span>`:''}${diceTxt?`<span class="m" style="color:var(--uni)">${esc(diceTxt)}</span>`:''}${regenTxt?`<span class="m" style="color:var(--ok)">${esc(regenTxt)}</span>`:''}${alvoTxt?`<span class="m" style="color:var(--warn)">⤳ no alvo: ${esc(alvoTxt)}</span>`:''}</div>`));
+      // melhoria escrita na ficha: ganha editar e remover; o bloco do livro não
+      if(m.idxFicha!=null){
+        const acts=el('<div class="card-actions" style="margin-left:auto"><button class="btn-mini" title="Editar">✎</button><button class="btn-mini del" title="Remover">✕</button></div>');
+        acts.querySelector('.btn-mini:not(.del)').onclick=()=>openItemEditor('classeMelhorias', m.idxFicha);
+        acts.querySelector('.del').onclick=()=>{
+          if(!confirm('Remover a melhoria "'+m.curto+'"?')) return;
+          state.classeMelhorias.splice(m.idxFicha,1);
+          // os contadores moram fora do item; sem isso ficariam órfãos em state para sempre
+          delete state.usos[m.key]; delete state.mecStacks[m.key]; delete state.mecAtivas[m.key];
+          save(); renderTalents(); recompute();
+        };
+        row.querySelector('.mec-head').appendChild(acts);
+      }
       if(m.manual){
         const sw=el(`<label class="switch sm" title="Ligar quando a condição valer"><input type="checkbox" ${state.mecAtivas[m.key]?'checked':''}><span class="slider"></span></label>`);
         sw.querySelector('input').onchange=e=>{ state.mecAtivas[m.key]=e.target.checked; save(); recompute(); renderTalents(); };
@@ -4032,6 +4238,27 @@ function renderTalents(){
       }
       card.appendChild(row);
     });
+    // Melhorias de outra classe: classMecs() as filtra fora (e com razão — não valem nada aqui),
+    // mas sem este bloco elas ficavam salvas na ficha sem nenhum jeito de editar ou apagar.
+    const orfas=(state.classeMelhorias||[]).map((x,i)=>({x,i})).filter(({x})=>x.classe && x.classe!==cls.n);
+    if(orfas.length){
+      const det=el(`<details style="margin-top:8px"><summary class="muted" style="cursor:pointer;font-size:11px">Melhorias de outras classes (${orfas.length}) — não valem nesta ficha</summary></details>`);
+      orfas.forEach(({x,i})=>{
+        const r=el(`<div class="mec-row off"><div class="mec-head"><span class="mec-name">${esc(x.nome||'Melhoria')}</span>
+          <span class="tag tag-amber" style="font-size:9px">${esc(x.classe)} Nv ${num(x.nivel)}</span>
+          <div class="card-actions" style="margin-left:auto"><button class="btn-mini" title="Editar">✎</button><button class="btn-mini del" title="Remover">✕</button></div></div></div>`);
+        r.querySelector('.btn-mini:not(.del)').onclick=()=>openItemEditor('classeMelhorias', i);
+        r.querySelector('.del').onclick=()=>{
+          if(!confirm('Remover a melhoria "'+(x.nome||'')+'"?')) return;
+          const k='mel:'+(x.id||('i'+i));
+          state.classeMelhorias.splice(i,1);
+          delete state.usos[k]; delete state.mecStacks[k]; delete state.mecAtivas[k];
+          save(); renderTalents(); recompute();
+        };
+        det.appendChild(r);
+      });
+      card.appendChild(det);
+    }
     c.appendChild(card);
   }
   if(state.talents.length===0 && !cls) c.appendChild(el('<div class="empty-effects"><div class="empty-effects-icon">✦</div>Nenhum talento</div>'));
@@ -4199,10 +4426,32 @@ const ITEM_SCHEMAS = {
     {k:'cond',l:'Condição — vale quando for verdadeira. Ex.: {Vida} < {VidaMax}/2  ·  {Mana} >= 10  ·  {Carga} > {CargaMax}  ·  {Determinação} >= 5 e {Sanidade} > 0',
      t:'cond',opcional:true,bloco:'gate',full:true,showIf:d=>d.gate==='cond'},
     {k:'raios',l:'Raios de ação (aparecem no Resumo de Combate) — aceita {tag}',t:'lista',campos:CAMPOS_RAIO,addLbl:'Raio',full:true,opcional:true},
+    {k:'efeitosAlvo',l:'Efeito que seus ataques aplicam no alvo enquanto o gatilho valer',t:'efeitosalvo',full:true,opcional:true},
     {k:'desc',l:'Descrição — aceita {tag} e {conta}, ex.: {Medicina} ou {0.3 x Medicina}',t:'textarea',full:true},
     {k:'mods',l:'Modificadores (×acúmulo quando gatilho = por acúmulo)',t:'mods',full:true,opcional:true},
     {k:'dice',l:'Dado bônus em rolagens',t:'dice',full:true,opcional:true}],
-    def:{nome:'Novo Talento',badge:'Passivo',nivel:0,nivelacao:'Padrão',active:true,gate:'always',stacks:0,stacksMax:3,desc:'',mods:[],dice:null} },
+    def:{nome:'Novo Talento',badge:'Passivo',nivel:0,nivelacao:'Padrão',active:true,gate:'always',stacks:0,stacksMax:3,desc:'',mods:[],dice:null,efeitosAlvo:[]} },
+  /* Melhoria de Talento de Classe — mesma gramática de um talento, mas mora dentro do card da
+     classe e só vale a partir do nível DAQUELA classe. É por aqui que as 17 classes cujo texto
+     de Nv 5 não está no sistema entram sem código novo. */
+  classeMelhorias:{ title:'Melhoria de Talento de Classe', render:'renderTalents', comId:true, fields:[
+    {k:'nome',l:'Nome',t:'text',full:true},
+    {k:'classe',l:'Classe a que pertence',t:'select',opts:CLASSES.map(c=>c.n)},
+    {k:'nivel',l:'Destrava no nível desta classe (5, 13 ou 15 pela tabela de XP)',t:'number'},
+    {k:'active',l:'Ativa',t:'check'},
+    {k:'manual',l:'Eu ligo quando a condição valer',t:'check'},
+    {k:'uso',l:'Limite de uso — ex.: 1x por combate · 2x por turno',t:'text',opcional:true},
+    {k:'gate',l:'Gatilho',t:'select',opcional:true,reflow:true,opts:[['always','Sempre'],['above-half','Acima da metade da vida'],['below-half','Abaixo da metade da vida'],['stacks','Por acúmulo (com teto)'],['cond','Condição personalizada…']]},
+    {k:'stacksMax',l:'Teto de acúmulos',t:'number',opcional:true,bloco:'gate',showIf:d=>d.gate==='stacks'},
+    {k:'cond',l:'Condição — vale quando for verdadeira. Ex.: {Vida} < {VidaMax}/2  ·  {NívelPrimária} >= 5',
+     t:'cond',opcional:true,bloco:'gate',full:true,showIf:d=>d.gate==='cond'},
+    {k:'raios',l:'Raios de ação (aparecem no Resumo de Combate) — aceita {tag}',t:'lista',campos:CAMPOS_RAIO,addLbl:'Raio',full:true,opcional:true},
+    {k:'efeitosAlvo',l:'Efeito que seus ataques aplicam no alvo (soma com o que a arma já aplica)',t:'efeitosalvo',full:true,opcional:true},
+    {k:'desc',l:'Descrição — aceita {tag} e {conta}, ex.: {Modificador de Físico e Força}',t:'textarea',full:true},
+    {k:'mods',l:'Modificadores (×acúmulo quando gatilho = por acúmulo)',t:'mods',full:true,opcional:true},
+    {k:'dice',l:'Dado bônus em rolagens',t:'dice',full:true,opcional:true}],
+    def:{nome:'Nova Melhoria',classe:'',nivel:5,active:true,manual:false,gate:'always',stacksMax:3,
+         desc:'',uso:'',mods:[],dice:null,raios:[],efeitosAlvo:[]} },
   tecnicas:{ title:'Técnica', render:'renderTechs', fields:[
     {k:'nome',l:'Nome',t:'text',full:true},
     {k:'escola',l:'Escola',t:'select',opts:ESCOLA_IDS.map(id=>[id,ESCOLAS[id].nome]),reflow:true},
@@ -4458,6 +4707,9 @@ function buildEfeitosEditor(container, arr, opts){
       const sel=el('<select title="Efeito do sistema"></select>');
       EFFECTS_DB.forEach(f=> sel.appendChild(el(`<option value="${f.id}">${esc(f.name)}</option>`)));
       sel.value=e.efeito||EFFECTS_DB[0].id;
+      // o select já mostra o 1º efeito, mas só gravava em onchange: quem aceitava o padrão
+      // salvava um efeito SEM id e o resumo de combate exibia "undefined 2/3".
+      if(!e.efeito) e.efeito=sel.value;
       const del=el('<button class="btn-mini del" type="button">✕</button>');
       del.onclick=()=>{ arr.splice(i,1); draw(); };
       cab.append(alvo,sel,del); bloco.appendChild(cab);
@@ -4685,6 +4937,9 @@ function limparBloco(sch, chave, data){
 }
 function openItemEditor(type, index, dataExistente){
   const sch=ITEM_SCHEMAS[type]; if(!sch) return;
+  // o CSS do modo leitura só tira o pointer-events dos botões; pelo teclado o editor ainda abria
+  // e mostrava uma edição que save() descarta. A RLS continua sendo a barreira real.
+  if(somenteLeitura) return;
   const isNew=(index==null);
   const data=dataExistente || (isNew?structuredClone(sch.def):structuredClone(state[type][index]));
   if(sch.fields.some(f=>f.t==='mods') && !Array.isArray(data.mods)) data.mods=[];
@@ -4757,6 +5012,10 @@ document.getElementById('itemSaveBtn').onclick=()=>{
   coletarItemForm();
   const {type,index,sch,data}=editorCtx;
   const obj=data; // working clone (inclui mods e fórmulas já editados)
+  // comId: o item guarda contadores fora dele (usos/acúmulos/interruptor em state.*), então
+  // precisa de uma chave que sobreviva a reordenar e remover a lista. O índice não serve.
+  if(sch.comId && !obj.id) obj.id='m'+Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+  if(!Array.isArray(state[type])) state[type]=[];
   if(index==null) state[type].push(obj); else state[type][index]=obj;
   save(); window[sch.render](); recompute();
   closeModal('itemModal'); editorCtx=null;
