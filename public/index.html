@@ -1189,25 +1189,10 @@ const CLASS_MEC = {
     {n:"Bônus versátil", d:"Ataques, defesas e instâncias de cura recebidas ganham +D4. Acima da metade da vida, o D4 de dano vale o dobro (defesa e cura não dobram).",
      dice:[{die:4,count:1,cats:["ataque"],doubleWhen:"above-half"},
            {die:4,count:1,cats:["defesa","cura"]}]},
-    /* Melhoria de Nv 5 (decisão do jogador em 2026-11-15): só o DANO vira D6, sempre. A defesa
-       segue D4. A CURA recebida vira D6 apenas abaixo da metade da vida; acima, continua D4.
-       Como o motor não troca o tamanho do dado por condição, a cura mora em dois blocos com
-       gatilhos opostos — nunca os dois ao mesmo tempo, então não somam. Deixar os dados de
-       ataque/defesa aqui e a cura lá evita repetir o mesmo número em dois lugares. */
-    {n:"Bônus versátil ampliado", nivel:5, substitui:"Bônus versátil",
-     d:"Melhoria de Nv 5: o dado de dano bônus sobe de D4 para D6. Acima da metade da vida, o D6 de dano vale o dobro. Defesas seguem com +D4.",
-     dice:[{die:6,count:1,cats:["ataque"],doubleWhen:"above-half"},
-           {die:4,count:1,cats:["defesa"]}]},
-    {n:"Cura recebida", nivel:5, gate:"above-half",
-     d:"Acima da metade da vida, as instâncias de cura recebidas ganham +D4.",
-     dice:[{die:4,count:1,cats:["cura"]}]},
-    {n:"Cura recebida reforçada", nivel:5, gate:"below-half",
-     d:"Melhoria de Nv 5: com metade da vida ou menos, as instâncias de cura recebidas ganham +D6 no lugar do +D4.",
-     dice:[{die:6,count:1,cats:["cura"]}]},
-    {n:"Castigo do punho", nivel:5, gate:"above-half",
-     d:"Melhoria de Nv 5: acima da metade da vida, cada ataque seu aplica Dor 01 e Retenção 01 no alvo (soma com o que a arma já aplicar).",
-     efeitosAlvo:[{alvo:"alvo",efeito:"dor",valorFormula:"",acumuloFormula:"1",duracaoFormula:""},
-                  {alvo:"alvo",efeito:"retencao",valorFormula:"",acumuloFormula:"1",duracaoFormula:""}]},
+    /* A melhoria de Nv 5 do Lutador foi desfeita a pedido do jogador (2026-11-15): o talento
+       volta ao bônus único de D4 acima. O motor continua de pé — nivel:N, substitui: e
+       efeitosAlvo seguem valendo, e o card tem "+ Melhoria" para escrever outra quando a mesa
+       decidir. Não apague o motor junto: ele é o que a XP_TABLE promete nos Níveis 5, 13 e 15. */
     {n:"Regeneração assistida", regenBonus:1, d:"Regeneração aplica somente 1 de cura adicional por rodada (no lugar do D4)."},
     {n:"Desarme na adversidade", gate:"below-half", d:"Abaixo da metade da vida, permite teste de Artes Marciais para desarmar o inimigo após uma defesa bem-sucedida."},
     {n:"Último fôlego", uso:"1x por combate", d:"Antes de cair em morrendo, contra-ataca como ação livre se o atacante estiver no seu alcance físico."}
@@ -1641,6 +1626,9 @@ const MOD_TARGETS = [
   // conseguia expressar. Sem eles, 24 dos 30 efeitos do sistema não faziam nada.
   {v:'dfis', l:'Dados físicos (− = desvantagem)'},
   {v:'dment', l:'Dados mentais (− = desvantagem)'},
+  // físico/mental não vale só para DADOS (dfis/dment): é uma TAG do grupo, e um bônus
+  // numérico pode mirar nela — "bônus em perícias físicas" é uma linha, não uma por perícia.
+  {v:'ptipo', l:'Bônus em perícias', sub:'tipo'},
   {v:'cura', l:'Cura recebida'},
   {v:'custo', l:'Custo adicional de uso', sub:'custo'},
   {v:'mobpct', l:'Mobilidade (%)'},
@@ -1651,6 +1639,12 @@ const MOD_TARGETS = [
 ];
 const SUB_CUSTO = [['estamina','Estâmina'],['mana','Mana']];
 const SUB_BLOQUEIO = [['fisico','Dados físicos'],['mental','Dados mentais']];
+const SUB_TIPO = [['fisico','Físicas'],['mental','Mentais']];
+/* ponytail: tabela única das sub-opções de lista fixa. SUB_CUSTO e SUB_BLOQUEIO existiam e
+   NINGUÉM as lia — o editor só sabia attr/skill/status, então 'custo' e 'bloqueio' abriam um
+   select vazio e gravavam sem sub (bloqueio:fisico nunca casava com sumMods). Uma tabela cobre
+   os três e qualquer alvo futuro de lista fixa. */
+const SUB_OPTS = {custo:SUB_CUSTO, bloqueio:SUB_BLOQUEIO, tipo:SUB_TIPO};
 
 /* ---- Dados físicos × mentais ------------------------------------------------------------
    O livro usa os dois termos (Exaustão, Sobrecarga, Desconcentração) e NUNCA lista quais
@@ -2531,6 +2525,18 @@ function gateSatisfied(t, acima){
   }
 }
 function talentActive(t, acima){ return t.active!==false && gateSatisfied(t, acima); }
+/* ---- Acúmulo cheio: o talento troca de patamar -------------------------------------------
+   Um talento por acúmulo soma mods × acúmulos. Com `modsMax`, ao ENCOSTAR no teto ele passa a
+   usar essa outra lista UMA vez, no lugar da de cima — é troca, não soma, então o que deve
+   continuar valendo precisa estar repetido lá. Um mod com `dado:4` soma o D4 que o jogador
+   girou NA MESA e digitou no card (t.dadoVal): a ficha não rola no lugar dele. */
+function noAcumuloCheio(t){
+  const teto=num(t.stacksMax)||0;
+  return t.gate==='stacks' && teto>0 && (t.modsMax||[]).length>0 && clamp(num(t.stacks),0,teto)>=teto;
+}
+function modsDoTeto(t){
+  return (t.modsMax||[]).map(m=> m.dado ? {...m, value:num(m.value)+clamp(num(t.dadoVal),0,num(m.dado))} : m);
+}
 /* Lista parcial publicada durante a 2ª passada de activeModifiers. Enquanto está preenchida,
    qualquer reentrada devolve ela em vez de recalcular — é o que quebra o ciclo
    activeModifiers → gatilho → formulaVars → sumMods → activeModifiers. */
@@ -2566,14 +2572,20 @@ function activeModifiers(){
   // teve. Um talento que dependa do bônus de outro talento precisaria de uma 3ª passada.
   _modsParciais = out;
   try{
-    for(const t of [...classMecs(), ...state.talents]){ if(talentActive(t,acima)){ const mult=(t.gate==='stacks')?clamp(t.stacks||0,0,t.stacksMax||99):1; push(t.nome, t.mods, mult); } }
+    for(const t of [...classMecs(), ...state.talents]){
+      if(!talentActive(t,acima)) continue;
+      if(noAcumuloCheio(t)){ push(t.nome+' · acúmulo cheio', modsDoTeto(t)); continue; }
+      const mult=(t.gate==='stacks')?clamp(t.stacks||0,0,t.stacksMax||99):1;
+      push(t.nome, t.mods, mult);
+    }
   } finally { _modsParciais = null; }
-  // Comunhão: "vantagem em testes de Resistência externos" é ganho de ATRIBUTO —
-  // física = Vitalidade e Constituição, mental = Mente e Sabedoria — e escorre para as perícias.
+  // Comunhão: a descrição da técnica dá "bônus em perícias físicas" — é a tag de tipo, não dois
+  // grupos escolhidos a dedo. Antes empurrava attr em Vitalidade e Constituição + Mente e
+  // Sabedoria: deixava de fora Destreza, Físico e Precisão (físicos) e premiava um grupo mental.
+  // O campo continua chamando vantagemFormula para não quebrar ficha salva.
   if(state.cr.ativa && num(state.cr.valor)>0){
     const b=crBonus();
-    if(b.vantagem) push('Comunhão CR'+b.cr, [{target:'attr',sub:'Vitalidade e Constituição',value:b.vantagem},
-                                             {target:'attr',sub:'Mente e Sabedoria',value:b.vantagem}]);
+    if(b.vantagem) push('Comunhão CR'+b.cr, [{target:'ptipo',sub:'fisico',value:b.vantagem}]);
   }
   return out;
 }
@@ -2705,7 +2717,13 @@ function crBonus(){
 /* redução da faixa de crítico concedida pela Comunhão ativa */
 function critReducao(){ return state.cr.ativa? crBonus().crit : 0; }
 
-function skillMods(grupoNome, periciaNome){ return sumMods('attr:'+grupoNome) + sumMods('skill:'+periciaNome); }
+/* Três canais somam no modificador de uma perícia: o grupo (attr:), ela mesma (skill:) e a TAG
+   do grupo (ptipo:físico|mental). Fica só aqui de propósito — totalPericia().own continua sem
+   nada disso, porque Defesa e dano somam o atributo à parte e contariam duas vezes. */
+function skillMods(grupoNome, periciaNome){
+  const t=tipoGrupo(grupoNome);
+  return sumMods('attr:'+grupoNome) + sumMods('skill:'+periciaNome) + (t?sumMods('ptipo:'+t):0);
+}
 function totalPericia(grupoNome, periciaNome){
   const g=state.atributos.find(x=>x.nome===grupoNome); if(!g) return {val:0,bonusVal:0,crit:20,extra:0};
   const p=g.pericias.find(x=>x.n===periciaNome); if(!p) return {val:g.mod,bonusVal:g.mod,crit:20,extra:0};
@@ -3864,7 +3882,7 @@ function renderCR(){
   if(b.dano) linhas.push(`+${b.dano} dano físico <span class="muted">(${esc(cfg.danoFormula)} por ${cfg.danoIntervalo} CR)</span>`);
   if(b.resist) linhas.push(`+${b.resist} Resistência <span class="muted">(${esc(cfg.resistFormula)} a cada ${cfg.resistIntervalo} CR)</span>`);
   if(b.crit) linhas.push(`−${b.crit} na faixa de crítico <span class="muted">(a cada ${cfg.critIntervalo} CR)</span>`);
-  if(b.vantagem) linhas.push(`+${b.vantagem} de vantagem em testes de Resistência externos <span class="muted">(lembrete)</span>`);
+  if(b.vantagem) linhas.push(`+${b.vantagem} em todas as perícias físicas <span class="muted">(${esc(cfg.vantagemFormula||'')} por CR)</span>`);
   elp.appendChild(el(`<div class="cr-bonus"><b>Bônus com CR ${cr.valor}${uni?' · UNÍSSONO ×2':''}:</b><br>${linhas.join('<br>')||'—'}</div>`));
 
   // O teste é rolado na mesa; a ficha só registra o resultado e aplica o que cada saída manda.
@@ -4125,8 +4143,9 @@ function modLabel(m){
   const t=MOD_TARGETS.find(x=>x.v===m.target);
   const tl=t?t.l:m.target;
   if(m.target==='nota') return m.sub||'lembrete';
-  const sub=m.sub?` ${m.sub}`:'';
-  return `${m.value>0?'+':''}${m.value} ${tl}${sub}`;
+  const tb=t&&SUB_OPTS[t.sub];
+  const subTxt=m.sub?` ${(tb&&(tb.find(x=>x[0]===m.sub)||[])[1])||m.sub}`:'';
+  return `${m.value>0?'+':''}${m.value} ${tl}${subTxt}`;
 }
 function renderBuffs(){
   const c=document.getElementById('buffsList'); c.innerHTML='';
@@ -4274,11 +4293,21 @@ function renderTalents(){
       <div class="card-desc">${esc(interpolarTags(t.desc||''))}</div>
     </div>`);
     if(t.gate==='stacks'){
-      const cur=clamp(t.stacks||0,0,t.stacksMax||3), tot=(t.mods||[]).map(m=>modLabel({...m,value:m.value*cur})).join(' · ');
-      const ctl=el(`<div class="row" style="gap:6px;margin-top:4px"><span class="muted">Acúmulos:</span><button class="btn-step minus">−</button><span class="mono">${cur}/${t.stacksMax||3}</span><button class="btn-step plus">+</button><span class="muted" style="margin-left:auto">${esc(tot||'—')}</span></div>`);
+      const cur=clamp(t.stacks||0,0,t.stacksMax||3), cheio=noAcumuloCheio(t);
+      const efetivos = cheio ? modsDoTeto(t) : (t.mods||[]).map(m=>({...m,value:m.value*cur}));
+      const tot=efetivos.map(m=>modLabel(m)).join(' · ');
+      const ctl=el(`<div class="row" style="gap:6px;margin-top:4px"><span class="muted">Acúmulos:</span><button class="btn-step minus">−</button><span class="mono">${cur}/${t.stacksMax||3}</span><button class="btn-step plus">+</button><span class="muted" style="margin-left:auto">${cheio?'<b style="color:var(--uni)">cheio · </b>':''}${esc(tot||'—')}</span></div>`);
       ctl.querySelector('.minus').onclick=()=>{ t.stacks=Math.max(0,(t.stacks||0)-1); save(); recompute(); renderTalents(); };
       ctl.querySelector('.plus').onclick=()=>{ t.stacks=Math.min(t.stacksMax||3,(t.stacks||0)+1); save(); recompute(); renderTalents(); };
       card.appendChild(ctl);
+      // o dado é girado na mesa; o campo só aparece quando o acúmulo encosta no teto
+      const faces=Math.max(0,...(t.modsMax||[]).map(m=>num(m.dado)));
+      if(cheio && faces>0){
+        const dl=el(`<div class="row" style="gap:6px;margin-top:4px"><span class="muted">D${faces} girado na mesa:</span><input type="number" class="mono" min="0" max="${faces}" style="width:64px" value="${clamp(num(t.dadoVal),0,faces)}"></div>`);
+        const di=dl.querySelector('input');
+        di.onchange=()=>{ t.dadoVal=clamp(num(di.value),0,faces); save(); recompute(); renderTalents(); };
+        card.appendChild(dl);
+      }
     }
     card.querySelector('.switch input').onchange=e=>{ t.active=e.target.checked; save(); recompute(); renderTalents(); };
     card.querySelector('.btn-mini:not(.del)').onclick=()=>openItemEditor('talents',i);
@@ -4429,8 +4458,10 @@ const ITEM_SCHEMAS = {
     {k:'efeitosAlvo',l:'Efeito que seus ataques aplicam no alvo enquanto o gatilho valer',t:'efeitosalvo',full:true,opcional:true},
     {k:'desc',l:'Descrição — aceita {tag} e {conta}, ex.: {Medicina} ou {0.3 x Medicina}',t:'textarea',full:true},
     {k:'mods',l:'Modificadores (×acúmulo quando gatilho = por acúmulo)',t:'mods',full:true,opcional:true},
+    {k:'modsMax',l:'No acúmulo cheio — SUBSTITUEM os de cima (repita o que deve continuar valendo). O dado é girado na mesa e digitado no card',
+     t:'mods',comDado:true,full:true,opcional:true,showIf:d=>d.gate==='stacks'},
     {k:'dice',l:'Dado bônus em rolagens',t:'dice',full:true,opcional:true}],
-    def:{nome:'Novo Talento',badge:'Passivo',nivel:0,nivelacao:'Padrão',active:true,gate:'always',stacks:0,stacksMax:3,desc:'',mods:[],dice:null,efeitosAlvo:[]} },
+    def:{nome:'Novo Talento',badge:'Passivo',nivel:0,nivelacao:'Padrão',active:true,gate:'always',stacks:0,stacksMax:3,desc:'',mods:[],modsMax:[],dice:null,efeitosAlvo:[]} },
   /* Melhoria de Talento de Classe — mesma gramática de um talento, mas mora dentro do card da
      classe e só vale a partir do nível DAQUELA classe. É por aqui que as 17 classes cujo texto
      de Nv 5 não está no sistema entram sem código novo. */
@@ -4499,7 +4530,7 @@ const ITEM_SCHEMAS = {
     def:{nome:'Rolagem',dice:'D20',category:'',terms:[{target:'flat',value:0}]} }
 };
 let editorCtx=null;
-function buildModsEditor(container, mods, targets){
+function buildModsEditor(container, mods, targets, opts){
   targets = targets || MOD_TARGETS;
   container.innerHTML='';
   const list=el('<div class="mods-list"></div>'); container.appendChild(list);
@@ -4516,12 +4547,13 @@ function buildModsEditor(container, mods, targets){
       const rebuildSub=()=>{
         const def=targets.find(t=>t.v===m.target); subWrap.innerHTML='';
         if(def&&def.sub){
-          let opts=[];
+          let opts=[], rotulo=o=>o;
           if(def.sub==='attr') opts=state.atributos.map(g=>g.nome);
           else if(def.sub==='skill') state.atributos.forEach(g=>g.pericias.forEach(p=>opts.push(p.n)));
-          else if(def.sub==='status') opts=STATUS_ORDER.slice();
+          else if(def.sub==='status'){ opts=STATUS_ORDER.slice(); rotulo=o=>STATUS_META[o].name; }
+          else if(SUB_OPTS[def.sub]){ const tb=SUB_OPTS[def.sub]; opts=tb.map(x=>x[0]); rotulo=o=>(tb.find(x=>x[0]===o)||[])[1]||o; }
           const s=el('<select class="mr-subsel" title="Qual"></select>');
-          opts.forEach(o=>{ const lab=(def.sub==='status')?STATUS_META[o].name:o; const op=el(`<option value="${esc(o)}">${esc(lab)}</option>`); if(m.sub===o)op.selected=true; s.appendChild(op); });
+          opts.forEach(o=>{ const lab=rotulo(o); const op=el(`<option value="${esc(o)}">${esc(lab)}</option>`); if(m.sub===o)op.selected=true; s.appendChild(op); });
           if(!m.sub&&opts.length) m.sub=opts[0];
           s.onchange=()=>{ m.sub=s.value; }; subWrap.appendChild(s);
         } else if(def&&def.v==='nota'){ const t=el(`<input type="text" placeholder="texto do lembrete">`); t.value=m.sub||''; t.oninput=()=>{ m.sub=t.value; }; subWrap.appendChild(t); }
@@ -4530,7 +4562,15 @@ function buildModsEditor(container, mods, targets){
       tsel.onchange=()=>{ m.target=tsel.value; delete m.sub; rebuildSub(); };
       val.onchange=()=>{ m.value=num(val.value); };
       del.onclick=()=>{ mods.splice(idx,1); draw(); };
-      row.append(tsel,subWrap,val,del); list.appendChild(row); rebuildSub();
+      row.append(tsel,subWrap,val);
+      if(opts&&opts.comDado){
+        const ds=el('<select class="mr-dado" title="Soma um dado girado na mesa"></select>');
+        [[0,'sem dado'],[4,'+D4'],[6,'+D6'],[8,'+D8'],[10,'+D10'],[12,'+D12'],[20,'+D20']]
+          .forEach(([v,l])=>{ const o=el(`<option value="${v}">${l}</option>`); if(num(m.dado)===v)o.selected=true; ds.appendChild(o); });
+        ds.onchange=()=>{ const v=num(ds.value); if(v) m.dado=v; else delete m.dado; };
+        row.append(ds);
+      }
+      row.append(del); list.appendChild(row); rebuildSub();
     });
   };
   draw();
@@ -4784,7 +4824,7 @@ function buildCrCfgEditor(container, data, key){
   formula('Dano físico','danoFormula','danoIntervalo');
   formula('Resistência','resistFormula','resistIntervalo');
   formula('Redução da faixa de crítico','critFormula','critIntervalo');
-  formula('Vantagem em testes externos (lembrete)','vantagemFormula',null);
+  formula('Bônus em perícias físicas','vantagemFormula',null);
   formula('Custo de mana por rodada','custoRodada',null);
   formula('Raio da aura (m)','raioFormula',null);
   formula('Sanidade perdida ao falhar','perdaFalha',null);
@@ -4961,7 +5001,7 @@ function openItemEditor(type, index, dataExistente){
     if(f.t==='acoes'){ if(!Array.isArray(data[f.k])) data[f.k]=[]; const box=el('<div class="mods-editor"></div>'); buildAcoesEditor(box, data[f.k]); wrap.appendChild(box); form.appendChild(wrap); return; }
     if(f.t==='crcfg'){ const box=el('<div class="cr-cfg"></div>'); buildCrCfgEditor(box, data, f.k); wrap.appendChild(box); form.appendChild(wrap); return; }
     if(f.t==='lista'){ if(!Array.isArray(data[f.k])) data[f.k]=[]; const box=el('<div class="mods-editor"></div>'); buildListaEditor(box, data[f.k], f.campos, f.addLbl); wrap.appendChild(box); form.appendChild(wrap); return; }
-    if(f.t==='mods'){ if(!Array.isArray(data[f.k])) data[f.k]=[]; const box=el('<div class="mods-editor"></div>'); buildModsEditor(box, data[f.k]); wrap.appendChild(box); form.appendChild(wrap); return; }
+    if(f.t==='mods'){ if(!Array.isArray(data[f.k])) data[f.k]=[]; const box=el('<div class="mods-editor"></div>'); buildModsEditor(box, data[f.k], null, {comDado:!!f.comDado}); wrap.appendChild(box); form.appendChild(wrap); return; }
     if(f.t==='terms'){ if(!Array.isArray(data[f.k])) data[f.k]=[]; const box=el('<div class="mods-editor"></div>'); buildModsEditor(box, data[f.k], TERM_TARGETS); wrap.appendChild(box); form.appendChild(wrap); return; }
     if(f.t==='cond'){
       // campo de condição livre: texto + atalho para as chaves + eco de verdadeiro/falso agora
