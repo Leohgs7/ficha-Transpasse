@@ -2505,7 +2505,7 @@ function avaliarCondicao(expr, padrao){
   padrao = (padrao===undefined) ? true : padrao;
   if(expr==null || String(expr).trim()==='') return padrao;
   let s = interpolarTags(String(expr));                       // {Vida} → número
-  const vars=formulaVars(), keys=Object.keys(vars).sort((a,b)=>b.length-a.length);
+  const vars=formulaVars(), keys=formulaKeys(vars);
   for(const k of keys){ if(s.includes(k)) s=s.split(k).join('('+(vars[k]||0)+')'); }   // nomes soltos também
   s = s.replace(/\be\b/gi,'&&').replace(/\bou\b/gi,'||')      // "e" / "ou" em português
        .replace(/(^|[^<>!=])=(?!=)/g,'$1==')                  // "=" solto vira comparação
@@ -2541,8 +2541,31 @@ function modsDoTeto(t){
    qualquer reentrada devolve ela em vez de recalcular — é o que quebra o ciclo
    activeModifiers → gatilho → formulaVars → sumMods → activeModifiers. */
 let _modsParciais = null;
+/* ===== CACHE DE UMA ÁRVORE DE CÁLCULO =====================================
+   ponytail: com a Comunhão ligada, activeModifiers() chama crBonus() → evalFormula()
+   → formulaVars(), e formulaVars() consulta ~300 vezes o motor de modificadores —
+   cada consulta voltando a activeModifiers(). UMA leitura custava ~1500 reconstruções
+   da lista inteira, e uma tela, milhões: era isso que travava o navegador ao ativar
+   a técnica, e depois em qualquer clique.
+   O cache vale SÓ enquanto dura a chamada de topo (_calcNivel volta a 0 → descarta).
+   Nada dentro dessa árvore altera a ficha, então não há como devolver valor velho.
+   As duas guardas de reentrância MUDAM o que estas funções devolvem: dentro de crBonus()
+   (_crBusy) a Comunhão não entra na própria conta, e numa formulaVars aninhada (_fvAninhado)
+   DanoFísico sai sem ela. Por isso cada combinação tem sua gaveta — uma gaveta só faria uma
+   fórmula que cita {DanoFísico} perder o bônus da técnica. */
+let _calcNivel=0;
+const _cacheMods=[null,null], _cacheVars=[null,null,null,null];
+const _gavetaMods=()=>_crBusy?1:0;
+const _gavetaVars=aninhado=>(aninhado?1:0)|(_crBusy?2:0);
+/* alterou a ficha no meio de uma árvore de cálculo? o cache cai na hora */
+function invalidarCalculo(){ _cacheMods.fill(null); _cacheVars.fill(null); }
+function _calcSai(){ if(--_calcNivel<=0){ _calcNivel=0; invalidarCalculo(); } }
 function activeModifiers(){
   if(_modsParciais) return _modsParciais;
+  const gav=_gavetaMods();
+  if(_cacheMods[gav]) return _cacheMods[gav];
+  _calcNivel++;
+  try{
   const out=[];
   const push=(src, mods, mult)=>{ for(const m of (mods||[])){ if(m && m.target && m.target!=='nota' && m.value){ const v=(+m.value||0)*(mult==null?1:mult); if(v) out.push({src, key:modKey(m), value:v, target:m.target, sub:m.sub}); } } };
   for(const c of state.condicoes){ if(c.ativa) push(c.nome, c.mods); }
@@ -2587,7 +2610,8 @@ function activeModifiers(){
     const b=crBonus();
     if(b.vantagem) push('Comunhão CR'+b.cr, [{target:'ptipo',sub:'fisico',value:b.vantagem}]);
   }
-  return out;
+  return (_cacheMods[gav] = out);
+  } finally { _calcSai(); }
 }
 /* dados bônus por categoria de rolagem (talentos/efeitos com gatilho satisfeito) */
 function activeDiceBonuses(cat){
@@ -2625,7 +2649,9 @@ const SKILL_CAT = {
   "Defesa":"defesa","Queda":"defesa","Contenção":"defesa","Resiliência":"defesa",
   "Sanação":"cura","Medicina":"cura"
 };
-function sumMods(key){ return activeModifiers().filter(m=>m.key===key).reduce((a,m)=>a+m.value,0); }
+/* ponytail: laço em vez de filter().reduce(). São duas alocações por leitura, e isto
+   é chamado centenas de vezes por render. */
+function sumMods(key){ let s=0; for(const m of activeModifiers()) if(m.key===key) s+=m.value; return s; }
 function modSources(key){ return activeModifiers().filter(m=>m.key===key); }
 
 /* ----- Escala de status pelos atributos (usa o MAIOR atributo) ----- */
@@ -2778,6 +2804,10 @@ function equiparArma(w, mao){
    e como a leitura é feita na hora do uso, subir um nível reflete em tudo que o referencia. */
 let _fvAninhado=false;
 function formulaVars(){
+  const gav=_gavetaVars(_fvAninhado);
+  if(_cacheVars[gav]) return _cacheVars[gav];
+  _calcNivel++;
+  try{
   const v={};
   // ordem importa: o nome canônico (acentuado) precisa ser inserido primeiro para ser o
   // exibido na lista de tags — os apelidos continuam válidos em fórmulas antigas
@@ -2788,14 +2818,16 @@ function formulaVars(){
   v['NivelMagia']=v['NívelMagia']=state.metodos.nivelMagia;
   v['NivelDeclinacao']=v['NívelDeclinação']=state.metodos.nivelDeclinacao;
   for(const r of state.ramos) v[r.n]=r.nv;
-  for(const g of state.atributos){ v[g.nome]=g.mod; for(const p of g.pericias) v[p.n]=totalPericia(g.nome,p.n).val; }
   // "Modificador de Físico e Força" é como o livro fala, e era o que todo mundo escrevia entre
   // chaves. Sem o apelido sobrava a palavra "Modificador" na conta, a whitelist reprovava e a
   // chave ficava crua na tela. Apelido, não regex de limpeza: um nome desconhecido continua
   // falhando à vista em vez de virar zero silencioso.
+  // ponytail: nome canônico e apelidos na MESMA passada. Eram dois laços, e cada perícia
+  // passava duas vezes por totalPericia() — justo a função cara (três consultas ao motor
+  // de modificadores). A ordem de inserção não importa: tagsPorGrupo() ordena por conta própria.
   for(const g of state.atributos){
-    v['Modificador de '+g.nome]=v['Mod de '+g.nome]=g.mod;
-    for(const p of g.pericias) v['Modificador de '+p.n]=v['Mod de '+p.n]=totalPericia(g.nome,p.n).val;
+    v[g.nome]=v['Modificador de '+g.nome]=v['Mod de '+g.nome]=g.mod;
+    for(const p of g.pericias){ const t=totalPericia(g.nome,p.n).val; v[p.n]=v['Modificador de '+p.n]=v['Mod de '+p.n]=t; }
   }
   // status: valor atual e máximo
   for(const k of STATUS_ORDER){ const nome=STATUS_META[k].name; v[nome]=state.status[k].cur; v[nome+'Max']=statusMax(k); }
@@ -2820,7 +2852,19 @@ function formulaVars(){
   v['NivelPrimaria']=v['NívelPrimária']=num(state.basicos.nivelPrimaria);
   v['NivelSecundaria']=v['NívelSecundária']=num(state.basicos.nivelSecundaria);
   v['CR']=num(state.cr.valor);
+  // não congela uma tabela montada sobre a lista PARCIAL da 2ª passada de activeModifiers
+  if(!_modsParciais) _cacheVars[gav]=v;
   return v;
+  } finally { _calcSai(); }
+}
+/* ponytail: a lista de nomes ordenada por tamanho é a mesma para a tabela inteira —
+   ordenar ~450 chaves a cada fórmula avaliada era trabalho repetido. Acompanha o cache
+   da tabela: WeakMap, some junto quando a árvore de cálculo acaba. */
+const _varsKeys=new WeakMap();
+function formulaKeys(vars){
+  let k=_varsKeys.get(vars);
+  if(!k){ k=Object.keys(vars).sort((a,b)=>b.length-a.length); _varsKeys.set(vars,k); }
+  return k;
 }
 /* Tags visíveis ao montar fórmulas, agrupadas e em ordem alfabética.
    Só os nomes canônicos entram — apelidos como "Manip" continuam válidos em fórmulas
@@ -2951,7 +2995,7 @@ function evalFormula(expr, fallback){
   if(expr==null||expr==='') return fallback;
   if(typeof expr==='number') return expr;
   let s=String(expr);
-  const vars=formulaVars(), keys=Object.keys(vars).sort((a,b)=>b.length-a.length);
+  const vars=formulaVars(), keys=formulaKeys(vars);
   for(const k of keys){ if(s.includes(k)) s=s.split(k).join('('+(vars[k]||0)+')'); }
   s=s.replace(/x/gi,'*').replace(/,/g,'.');
   if(!/^[-0-9+*/(). ]*$/.test(s)) return fallback;
@@ -3289,7 +3333,7 @@ function renderStatus(){
   const list=document.getElementById('statusList'); list.innerHTML='';
   STATUS_ORDER.forEach(k=>{
     const meta=STATUS_META[k], s=state.status[k], mx=statusMax(k);
-    if(s.cur>mx) s.cur=mx;
+    if(s.cur>mx){ s.cur=mx; invalidarCalculo(); }   // escrita na ficha dentro de um render: derruba o cache junto
     const row=el(`<div class="status-row" data-key="${k}">
       <div class="status-icon" style="color:var(${meta.color})">${meta.icon}</div>
       <div class="status-name">${meta.name}</div>
@@ -3332,11 +3376,20 @@ function renderCompactStats(){
 }
 /* checkAutoStates entra aqui porque a carga é derivada dos itens: adicionar, editar
    ou remover peso tem que reavaliar Sobrepeso na hora, e todo caminho passa por aqui. */
-function recompute(){ renderStatus(); renderAttrs(); renderCombate(); renderRollSummary(); renderCR(); renderInv(); checkAutoStates(); }
+/* ponytail: os seis renderizadores leem o motor centenas de vezes e NÃO alteram a ficha —
+   as alterações estão dentro dos handlers que eles penduram, e esses só correm depois.
+   Uma árvore de cálculo só para os seis reaproveita a lista de modificadores e a tabela de
+   fórmulas em vez de remontá-las a cada leitura. checkAutoStates fica FORA: esse muda estado. */
+function recompute(){
+  _calcNivel++;
+  try{ renderStatus(); renderAttrs(); renderCombate(); renderRollSummary(); renderCR(); renderInv(); }
+  finally{ _calcSai(); }
+  checkAutoStates();
+}
 function updateBar(k){
   const s=state.status[k], mx=statusMax(k);
   const row=document.querySelector(`.status-row[data-key="${k}"]`); if(!row) return;
-  if(s.cur>mx) s.cur=mx;
+  if(s.cur>mx){ s.cur=mx; invalidarCalculo(); }   // idem
   const fill=row.querySelector('.bar-fill'), p=pct(s.cur,mx);
   fill.style.width=p+'%'; fill.style.background=barColor(k,p);
   row.querySelector('.val-text').textContent=`${s.cur} / ${mx}`;
@@ -3924,7 +3977,7 @@ function renderCR(){
     box.querySelector('.manual').onchange=e=>{ state.cr.desastreExtra=Math.max(0,num(e.target.value)); atualiza(); };
     box.querySelector('.zerar').onclick=()=>{ state.cr.desastreExtra=0; atualiza(); };
     elp.appendChild(box);
-  } else if(num(state.cr.desastreExtra)) { state.cr.desastreExtra=0; }
+  } else if(num(state.cr.desastreExtra)) { state.cr.desastreExtra=0; invalidarCalculo(); }
 
   if(b.raio) elp.appendChild(el(`<div class="cr-aura"><b>Raio ${b.raio} m</b> <span class="muted">(${esc(cfg.raioFormula)})</span> — ${esc(cfg.auraTexto||'')}</div>`));
   if(uni && num(cfg.unissonoRaio)) elp.appendChild(el(`<div class="cr-aura"><b>Raio do Uníssono ${num(cfg.unissonoRaio)} m</b> — ${esc(cfg.unissonoTexto||'')}</div>`));
@@ -3975,7 +4028,7 @@ function setState(newState, isManual){
     state.weapons.forEach(w=>(w.especiais||[]).forEach(e=>{ if(num(e.acc)){ e.acc=0; zerou=true; } }));
     runtime.reacoesUsadas=0;
     reporUsos('combate');                                   // "1x por combate" volta ao sair da luta
-    if(zerou){ save(); setTimeout(()=>{ recompute(); renderTalents(); renderWeapons(); },0); }
+    if(zerou){ invalidarCalculo(); save(); setTimeout(()=>{ recompute(); renderTalents(); renderWeapons(); },0); }
   }
   document.getElementById('roundBar').style.display=runtime.inCombat?'flex':'none';
   document.querySelectorAll('.state-btn').forEach(b=>b.classList.toggle('active', b.dataset.state===newState));
@@ -5491,6 +5544,22 @@ function renderAll(){
   porSetas();                       // setas de colapso nos painéis (os cards o observer cobre)
   const rn=document.getElementById('roundNum'); if(rn) rn.textContent=runtime.round;
   const rb=document.getElementById('roundBar'); if(rb) rb.style.display=runtime.inCombat?'flex':'none';
+}
+/* ponytail: toda função de desenho passa a rodar dentro de UMA árvore de cálculo.
+   Cada uma lê o motor de dezenas a centenas de vezes e nenhuma altera a ficha — as
+   alterações estão nos handlers que elas penduram, e esses só correm no clique seguinte.
+   Com a Comunhão ligada, renderAll() montava a lista de modificadores 995 vezes e a
+   tabela de fórmulas 705 vezes; embrulhada, são 5 e 8. Fica num lugar só para não
+   depender de alguém lembrar do try/finally ao escrever a próxima função de desenho.
+   Quem escreve na ficha NO MEIO do desenho (o clamp de renderStatus/updateBar, o
+   desastreExtra de renderCR) chama invalidarCalculo() na hora. */
+for(const nome of ['renderAll','renderIdentity','renderStatus','renderCombate','renderRollSummary','renderAttrs',
+                   'renderMethods','renderEscolaTabs','renderBranches','renderTechs','renderStateButtons',
+                   'renderReacoes','renderCR','renderEffects','renderBuffs','renderLog','renderTalents',
+                   'renderWeapons','renderEquip','renderInv','renderCompanions','updateBar']){
+  const f=globalThis[nome];
+  if(typeof f!=='function') continue;
+  globalThis[nome]=function(){ _calcNivel++; try{ return f.apply(this,arguments); } finally{ _calcSai(); } };
 }
 applyTheme();
 renderAll();
